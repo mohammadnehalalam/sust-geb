@@ -1,0 +1,108 @@
+/* GEB Hub: ডায়াগনস্টিক ল্যাব (v3.8) */
+.dx{--dxc:var(--card);display:block}
+.dx *{box-sizing:border-box}
+.dx-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+.dx-tab{appearance:none;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:10px 16px;border-radius:12px;font:inherit;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0}
+.dx-tab small{font-weight:500;color:var(--muted);font-size:12px}
+.dx-tab[aria-selected="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.dx-tab[aria-selected="true"] small{color:inherit;opacity:.8}
+.dx-sum{display:flex;flex-wrap:wrap;gap:6px 8px;margin:0 0 16px;align-items:center}
+.dx-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent-ink);font-size:13px;font-weight:600;border:1px solid transparent}
+.dx-chip.sig{background:var(--signal-soft);color:var(--signal)}
+.dx-chip.mut{background:var(--card2);color:var(--muted);border-color:var(--line)}
+.dx-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-l);padding:18px 20px;box-shadow:var(--shadow);margin:0 0 16px}
+.dx-card h3{margin:0 0 6px;font-size:19px}
+.dx-card h4{margin:14px 0 6px;font-size:15px}
+.dx-card p{margin:6px 0}
+.dx-intro{color:var(--muted);margin:0 0 16px;max-width:70ch}
+.dx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.dx-case{appearance:none;text-align:left;font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:var(--r-m);padding:14px 16px;cursor:pointer;display:flex;flex-direction:column;gap:6px}
+.dx-case:hover{border-color:var(--accent)}
+.dx-case b{font-size:16px}
+.dx-case .st{font-size:13px;color:var(--muted)}
+.dx-case.done{border-color:var(--accent);background:var(--card2)}
+.dx-btn{appearance:none;display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:700;cursor:pointer;line-height:1.2}
+.dx-btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.dx-btn.ink{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.dx-btn.sm{padding:6px 12px;font-size:14px;border-radius:10px}
+.dx-btn:disabled{opacity:.45;cursor:not-allowed}
+.dx-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.dx-back{margin:0 0 12px}
+.dx-lvl{color:var(--signal);letter-spacing:1px;font-size:14px}
+.dx-split{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+@media(min-width:900px){.dx-split{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+/* জেল */
+.dx-gel{background:var(--gel);border-radius:14px;padding:10px;border:1px solid var(--line);max-width:100%;overflow-x:auto}
+.dx-gel svg{display:block;max-width:100%;height:auto;margin:0 auto}
+.dx-gel-cap{font-size:13px;color:var(--muted);margin:6px 2px 0}
+.dx-flags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0}
+/* ক্লু ও ফর্ম */
+.dx-clues{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+.dx-clue{appearance:none;font:inherit;color:inherit;text-align:left;background:var(--card2);border:1px dashed var(--line);border-radius:12px;padding:10px 12px;cursor:pointer}
+.dx-clue.on{border-style:solid;border-color:var(--accent)}
+.dx-clue small{display:block;color:var(--muted)}
+.dx-panel{background:var(--card2);border:1px solid var(--line2);border-radius:12px;padding:10px 14px;margin:10px 0;font-size:14.5px}
+.dx-panel h5{margin:0 0 6px;font-size:14px}
+.dx-panel table{border-collapse:collapse;width:100%}
+.dx-panel td,.dx-panel th{padding:3px 8px 3px 0;text-align:left;vertical-align:top}
+.dx-panel .mono,.dx-mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;word-break:break-all}
+.dx-opts{display:grid;gap:6px}
+.dx-opt{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card);cursor:pointer}
+.dx-opt input{margin-top:4px;flex:none}
+.dx-opt.ok{border-color:var(--accent);background:var(--accent-soft)}
+.dx-opt.bad{border-color:var(--signal);background:var(--signal-soft)}
+.dx-form{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px 12px}
+.dx-form label{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--muted)}
+.dx-form input[type=number],.dx-form select{font:inherit;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);width:100%}
+.dx-checks{display:grid;gap:6px;margin:10px 0}
+.dx-checks label{display:flex;gap:8px;align-items:flex-start;font-size:14px}
+.dx details{margin:8px 0}
+.dx details>summary{cursor:pointer;font-weight:700}
+.dx-msg{padding:10px 14px;border-radius:12px;margin:10px 0;font-size:14.5px;border:1px solid var(--line);background:var(--card2)}
+.dx-msg.ok{border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+.dx-msg.bad{border-color:var(--signal);background:var(--signal-soft);color:var(--ink)}
+.dx-msg.warn{border-color:#d9a400;background:rgba(217,164,0,.12)}
+.dx-score{font-size:34px;font-weight:800;font-family:var(--f-head);line-height:1}
+/* ফরেনসিক */
+.dx-steps{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.dx-steps span{padding:4px 12px;border-radius:999px;border:1px solid var(--line);font-size:13px;color:var(--muted)}
+.dx-steps span.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.dx-steps span.dn{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
+.dx-ev{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);margin:6px 0;cursor:pointer}
+.dx-ev input{margin-top:5px;flex:none}
+.dx-ev small{display:block;color:var(--muted)}
+.dx-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.dx-tbl{border-collapse:collapse;width:100%;min-width:520px;font-size:13.5px}
+.dx-tbl th,.dx-tbl td{padding:5px 8px;border-bottom:1px solid var(--line2);text-align:center;white-space:nowrap}
+.dx-tbl th:first-child,.dx-tbl td:first-child{text-align:left;position:sticky;left:0;background:var(--card);font-weight:600}
+.dx-tbl thead th{background:var(--card2);font-size:12.5px}
+.dx-tbl td.m-match,.dx-tbl td.m-incl{background:rgba(11,143,115,.18)}
+.dx-tbl td.m-share{background:rgba(217,164,0,.2)}
+.dx-tbl td.m-mis{background:rgba(214,51,108,.2)}
+.dx-tbl td.m-nodata{background:var(--card2);color:var(--muted)}
+.dx-tbl td.m-part{background:rgba(217,164,0,.12)}
+.dx-tbl td.ev{font-weight:700}
+.dx-ep{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:6px}
+.dx-ep figure{margin:0;background:var(--gel);border-radius:8px;padding:4px 4px 2px;border:1px solid var(--line)}
+.dx-ep figcaption{font-size:11px;color:#9fb4c4;text-align:center}
+.dx-ep svg{display:block;width:100%;height:auto}
+.dx-vd{display:grid;gap:8px}
+.dx-vd .row{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.dx-vd .row.ok{border-color:var(--accent);background:var(--accent-soft)}
+.dx-vd .row.bad{border-color:var(--signal);background:var(--signal-soft)}
+.dx-vd .row b{min-width:9em}
+.dx-vd label{display:flex;gap:5px;align-items:center;font-size:14px}
+/* ডায়াগনস্টিক */
+.dx-pt{display:grid;gap:4px}
+.dx-pt .cc{font-size:16px}
+.dx-tests{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px}
+.dx-test{appearance:none;font:inherit;color:inherit;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;cursor:pointer}
+.dx-test small{display:block;color:var(--muted)}
+.dx-test.on{opacity:.55;border-style:dashed}
+.dx-res{border-left:4px solid var(--line);padding:6px 10px;margin:6px 0;background:var(--card);border-radius:0 10px 10px 0}
+.dx-res.key{border-color:var(--accent)}
+.dx-res.abn{border-color:var(--signal)}
+.dx-res.warn{border-color:#d9a400}
+.dx-res b{display:block}
+.dx-bar{height:8px;border-radius:99px;background:var(--line2);overflow:hidden}
+.dx-bar i{display:block;height:100%;background:var(--accent)}

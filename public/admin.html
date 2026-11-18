@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>অ্যাডমিন প্যানেল — GEB হাব</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#EDF3F0;--card:#fff;--ink:#10243E;--muted:#5A6B7C;--line:#D2DDD7;--accent:#0B8F73;--accent-soft:#D5EFE7;--sig:#D6336C;--sig-soft:#FBDDE8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 'Hind Siliguri',system-ui,sans-serif}
+h1,h2,h3{font-family:'Bricolage Grotesque','Hind Siliguri',sans-serif;margin:0;letter-spacing:-.01em}
+button,input,select,textarea{font:inherit;color:inherit}
+input,select,textarea{border:1px solid var(--line);border-radius:9px;background:#fff;padding:8px 11px;width:100%}
+textarea{resize:vertical;min-height:90px;line-height:1.5}
+label{display:block;font-weight:600;font-size:14px;margin:12px 0 4px}
+:focus-visible{outline:3px solid var(--sig);outline-offset:1px}
+.top{background:#0A1626;color:#fff;padding:12px 20px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:5}
+.top h1{font-size:20px}
+.top a,.top button{color:#fff;text-decoration:none;border:1px solid #35566B;background:transparent;border-radius:9px;padding:6px 14px;cursor:pointer}
+.top .sp{flex:1}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding:14px 20px 0;max-width:1200px;margin:auto}
+.tabs button{border:1px solid var(--line);background:var(--card);border-radius:10px 10px 0 0;padding:8px 16px;cursor:pointer;font-weight:600;color:var(--muted)}
+.tabs button[aria-selected=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+main{max-width:1200px;margin:auto;padding:0 20px 60px}
+.pane{background:var(--card);border:1px solid var(--line);border-radius:0 14px 14px 14px;padding:22px}
+.cols{display:grid;grid-template-columns:1fr 1.2fr;gap:26px}
+@media(max-width:900px){.cols{grid-template-columns:1fr}}
+.btn{border:0;border-radius:10px;padding:9px 18px;font-weight:600;cursor:pointer;background:var(--ink);color:#fff}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn.red{background:var(--sig)}
+.btn.sm{padding:4px 11px;font-size:14px;border-radius:8px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row>*{flex:1;min-width:120px}
+.row>.fit{flex:none;min-width:0}
+.hint{color:var(--muted);font-size:14px}
+.msg{padding:9px 14px;border-radius:10px;margin:12px 0;font-weight:500}
+.msg.ok{background:var(--accent-soft);color:#065E4B}.msg.err{background:var(--sig-soft);color:var(--sig)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+td input,td select{padding:5px 7px}
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.subtabs button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 14px;cursor:pointer;font-weight:600;color:var(--muted)}.subtabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.list{max-height:70vh;overflow:auto;border:1px solid var(--line);border-radius:12px}
+.li{display:flex;gap:10px;align-items:center;padding:9px 12px;border-bottom:1px solid #E3EBE7}
+.li:last-child{border-bottom:0}
+.li .t{flex:1;min-width:0}
+.li small{color:var(--muted);display:block}
+.chip{display:inline-block;font-size:12.5px;padding:1px 9px;border-radius:999px;background:var(--accent-soft);color:#065E4B;font-weight:600}
+.prev{background:#F6FAF8;border:1px dashed var(--line);border-radius:10px;padding:10px 14px;margin-top:10px;font-size:14.5px;max-height:240px;overflow:auto}
+.prev ol{margin:4px 0 8px;padding-left:20px}
+.login{max-width:380px;margin:12vh auto;background:#fff;border:1px solid var(--line);border-radius:18px;padding:28px}
+pre.code{background:#0A1626;color:#B7CBC6;padding:12px 14px;border-radius:10px;overflow:auto;font-size:13.5px}
+code{background:#E3EBE7;padding:0 5px;border-radius:4px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="/poll-builder.js"></script>
+<script>
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let D=null, tab='papers', editing=null, msgTimer;
+
+async function api(method,url,body){
+  const r=await fetch(url,{method,headers:body!==undefined?{'Content-Type':'application/json'}:{},body:body!==undefined?JSON.stringify(body):undefined});
+  let j={}; try{j=await r.json();}catch(e){}
+  if(r.status===401&&url!=='/api/login'){D=null;boot();throw new Error('লগইন দরকার');}
+  if(!r.ok) throw new Error(j.error||('ত্রুটি '+r.status));
+  return j;
+}
+function flash(text,ok=true){const m=$('#msg');if(!m)return;m.className='msg '+(ok?'ok':'err');m.textContent=text;clearTimeout(msgTimer);msgTimer=setTimeout(()=>{m.className='';m.textContent='';},5000);}
+async function load(){D=await (await fetch('/api/data',{cache:'no-store'})).json();}
+async function boot(){
+  const me=await (await fetch('/api/me')).json();
+  if(!me.admin){ $('#app').innerHTML=`<div class="login"><h1 style="font-size:26px">অ্যাডমিন লগইন</h1><p class="hint">GEB হাব-এর কনটেন্ট ম্যানেজ করতে পাসওয়ার্ড দিন।</p><label for="pw">পাসওয়ার্ড</label><input id="pw" type="password" autocomplete="current-password" autofocus><div id="msg"></div><div class="row" style="margin-top:14px"><button class="btn" id="go">লগইন</button><a href="/" class="btn ghost" style="text-align:center;text-decoration:none">সাইটে ফিরুন</a></div></div>`;
+    const go=async()=>{try{await api('POST','/api/login',{password:$('#pw').value});boot();}catch(e){flash(e.message,false);}};
+    $('#go').onclick=go; $('#pw').onkeydown=e=>{if(e.key==='Enter')go();}; return; }
+  await load(); shell();
+}
+const TABS=[['papers','প্রশ্নপত্র'],['courses','কোর্স তালিকা'],['details','কোর্স সিলেবাস'],['quiz','MCQ ও ছোট প্রশ্ন'],['viva','ভাইভা প্রশ্ন'],['community','কমিউনিটি'],['jobs','জব সেক্টর'],['rooms','লাইভ রুম'],['notices','নোটিস'],['files','ফাইল'],['meta','বিষয় ও টপিক'],['program','প্রোগ্রাম'],['settings','সেটিং'],['backup','ব্যাকআপ']];
+function shell(){
+  $('#app').innerHTML=`<div class="top"><h1>GEB হাব, অ্যাডমিন</h1><span class="sp"></span><span class="hint" style="color:#9DB3AE">ভিজিট: ${D.visits}</span><a href="/" target="_blank">সাইট দেখুন</a><button id="lo">লগআউট</button></div>
+  <div class="tabs" role="tablist">${TABS.map(t=>`<button role="tab" data-t="${t[0]}" aria-selected="${t[0]===tab}">${t[1]}</button>`).join('')}</div>
+  <main><div class="pane" id="pane"></div></main>`;
+  $('#lo').onclick=async()=>{await api('POST','/api/logout',{});boot();};
+  $$('.tabs button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;editing=null;shell();});
+  ({papers,courses,details,quiz,viva,community,jobs:jobsTab,rooms:roomsTab,notices,files,meta,program,settings,backup})[tab]();
+}
+const subjOpts=(sel)=>Object.keys(D.subjects).map(k=>`<option value="${k}" ${k===sel?'selected':''}>${esc(D.subjects[k].n)} — ${esc(D.subjects[k].t)}</option>`).join('');
+
+/* ---------- প্রশ্নপত্র ---------- */
+function parseQ(str){
+  const mk=side=>side.split(' | ').map((p,i)=>{let t=p.trim(),m=null;const mm=t.match(/\s*\[([^\]]*)\]\s*$/);if(mm){m=mm[1];t=t.slice(0,mm.index).trim();}return {l:String.fromCharCode(97+i),t,m};});
+  const s=str.split(' // ');return {main:mk(s[0]),alt:s[1]?mk(s[1]):null};
+}
+function papers(){
+  const p=editing?D.papers.find(x=>x.id===editing):null;
+  const list=[...D.papers].sort((a,b)=>b.y-a.y||a.c.localeCompare(b.c));
+  $('#pane').innerHTML=`<div id="msg"></div><div class="cols"><div>
+   <div class="row" style="margin-bottom:8px"><h3>সব প্রশ্নপত্র (${list.length})</h3><select id="pf" aria-label="কোর্স ফিল্টার" class="fit" style="width:auto"><option value="">সব কোর্স</option>${subjOpts('')}</select></div>
+   <div class="list" id="plist"></div></div>
+   <div><h3>${p?'প্রশ্নপত্র সম্পাদনা':'নতুন প্রশ্নপত্র'}</h3>
+    <div class="row"><div><label for="pc">কোর্স</label><select id="pc">${subjOpts(p&&p.c)}</select></div><div><label for="py">সাল (না জানলে ০)</label><input id="py" type="number" value="${p?p.y:new Date().getFullYear()}"></div></div>
+    <div class="row"><div><label for="pt">ধরন</label><select id="pt"><option value="F" ${p&&p.t==='F'?'selected':''}>ফাইনাল</option><option value="T" ${p&&p.t==='T'?'selected':''}>টার্ম টেস্ট / কুইজ</option></select></div><div><label for="pl">টার্ম টেস্টের নাম (ঐচ্ছিক)</label><input id="pl" value="${esc(p?p.l:'')}" placeholder="Term Test 2024-25 (A)"></div></div>
+    <div class="row"><div><label for="pcode">কোর্স কোড</label><input id="pcode" value="${esc(p?p.code:'')}" placeholder="GEB 0512 1121"></div><div><label for="ptot">মোট নম্বর</label><input id="ptot" type="number" value="${p?p.total:60}"></div></div>
+    <label for="pn">নোট (ঐচ্ছিক)</label><input id="pn" value="${esc(p?p.note:'')}" placeholder="Answer all questions">
+    <label for="pq">প্রশ্নগুলো (প্রতি লাইনে একটি প্রশ্ন)</label>
+    <textarea id="pq" style="min-height:260px" spellcheck="false">${esc(p?p.q.join('\n'):'')}</textarea>
+    <p class="hint">ফরম্যাট: উপপ্রশ্নগুলো <code> | </code> দিয়ে আলাদা, শেষে <code>[নম্বর]</code>, অথবা (OR) প্রশ্ন <code> // </code> দিয়ে। উদাহরণ:<br><code>Define enzyme. [1+3=4] | Differentiate enzyme and catalyst. [3] // Define bioinformatics. [4] | What is a database? [3]</code></p>
+    <label for="pa">মডেল উত্তর (ঐচ্ছিক): প্রশ্নের ক্রমে, প্রতিটি উত্তরের মাঝে <code>===</code> লেখা একটি লাইন</label>
+    <textarea id="pa" style="min-height:200px" spellcheck="false" placeholder="প্রশ্ন ১-এর উত্তর&#10;- পয়েন্ট ১&#10;- পয়েন্ট ২&#10;keys: enzyme, catalyst, active site&#10;===&#10;প্রশ্ন ২-এর উত্তর">${esc(p&&p.a?p.a.join('\n===\n'):'')}</textarea>
+    <p class="hint">লাইনের শুরুতে <code>- </code> দিলে তালিকা হয়। <code>keys: শব্দ১, শব্দ২</code> লাইন দিলে শিক্ষার্থী নিজের লেখা মেলানোর সময় কোন মূল শব্দ লিখেছে তা দেখাবে (এই লাইন উত্তরে দেখায় না)। কোনো প্রশ্নের উত্তর না থাকলে ওই জায়গা ফাঁকা রেখে <code>===</code> দিন।</p>
+    <div class="prev" id="prev"></div>
+    <div class="row" style="margin-top:14px"><button class="btn fit" id="psave">${p?'আপডেট করুন':'যোগ করুন'}</button>${p?'<button class="btn ghost fit" id="pnew">নতুন ফর্ম</button><button class="btn ghost fit" id="pdup">কপি করে নতুন</button>':''}</div>
+   </div></div>`;
+  const drawList=()=>{const f=$('#pf').value;$('#plist').innerHTML=list.filter(x=>!f||x.c===f).map(x=>`<div class="li"><div class="t"><b>${esc(D.subjects[x.c]?D.subjects[x.c].n:x.c)}</b> ${x.t==='F'?'Final '+x.y:esc(x.l||'Term Test')} <small>${x.q.length}টি প্রশ্ন, ${(x.a||[]).filter(Boolean).length}টি মডেল উত্তর, ${esc(x.code)}</small></div><button class="btn ghost sm" data-e="${x.id}">এডিট</button><button class="btn red sm" data-d="${x.id}">মুছুন</button></div>`).join('')||'<div class="li">কিছু নেই</div>';};
+  drawList(); $('#pf').onchange=drawList;
+  $('#plist').onclick=async e=>{const b=e.target.closest('button');if(!b)return;
+    if(b.dataset.e){editing=+b.dataset.e;papers();$('#pane').scrollIntoView();}
+    if(b.dataset.d&&confirm('এই প্রশ্নপত্র মুছে ফেলবেন?')){try{await api('DELETE','/api/papers/'+b.dataset.d);await load();if(editing===+b.dataset.d)editing=null;papers();flash('মুছে ফেলা হয়েছে');}catch(er){flash(er.message,false);}}};
+  const prev=()=>{const lines=$('#pq').value.split('\n').map(s=>s.trim()).filter(Boolean);let parts=0;
+    $('#prev').innerHTML=lines.length?lines.map((l,i)=>{const q=parseQ(l);parts+=q.main.length+(q.alt?q.alt.length:0);const fm=a=>`<ol type="a">${a.map(x=>`<li>${esc(x.t)} ${x.m?`<span class="chip">${esc(x.m)}</span>`:''}</li>`).join('')}</ol>`;return `<b>প্রশ্ন ${i+1}</b>${fm(q.main)}${q.alt?'<i>অথবা</i>'+fm(q.alt):''}`;}).join('')+`<div class="hint">${lines.length}টি প্রশ্ন, ${parts}টি উপপ্রশ্ন, ${$('#pa').value.split(/^\s*={3,}\s*$/m).filter(x=>x.trim()).length}টি মডেল উত্তর</div>`:'<span class="hint">প্রশ্ন লিখলে এখানে প্রিভিউ আসবে</span>';};
+  $('#pq').oninput=prev; $('#pa').oninput=prev; prev();
+  const body=()=>({c:$('#pc').value,y:+$('#py').value||0,t:$('#pt').value,l:$('#pl').value,code:$('#pcode').value,total:+$('#ptot').value,note:$('#pn').value,q:$('#pq').value.split('\n').map(s=>s.trim()).filter(Boolean),a:$('#pa').value.split(/^\s*={3,}\s*$/m).map(x=>x.trim())});
+  $('#psave').onclick=async()=>{try{if(p)await api('PUT','/api/papers/'+p.id,body());else await api('POST','/api/papers',body());await load();const was=!!p;editing=null;papers();flash(was?'আপডেট হয়েছে':'যোগ হয়েছে');}catch(er){flash(er.message,false);}};
+  if(p){$('#pnew').onclick=()=>{editing=null;papers();};$('#pdup').onclick=()=>{editing=null;papers();const o=p;$('#pc').value=o.c;$('#py').value=o.y;$('#pt').value=o.t;$('#pl').value=o.l;$('#pcode').value=o.code;$('#ptot').value=o.total;$('#pn').value=o.note;$('#pq').value=o.q.join('\n');$('#pa').value=(o.a||[]).join('\n===\n');prev();};}
+}
+
+/* ---------- কোর্স তালিকা ---------- */
+let semIdx=0;
+function courses(){
+  const s=D.curriculum[semIdx];
+  $('#pane').innerHTML=`<div id="msg"></div><div class="row"><div><label for="sem">সেমিস্টার</label><select id="sem">${D.curriculum.map((x,i)=>`<option value="${i}" ${i===semIdx?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div><div><label for="sname">সেমিস্টারের নাম</label><input id="sname" value="${esc(s.name)}"></div></div>
+  <p class="hint">“আইডি” কলামে একটি ছোট ইংরেজি আইডি (যেমন GEB121) দিলে সেই কোর্সে সিলেবাস ও প্রশ্নব্যাংক যুক্ত করা যায়। প্রশ্নব্যাংকের জন্য আইডি “বিষয় ও টপিক” ট্যাবের বিষয়-আইডির সাথে মিলতে হবে।</p>
+  <div style="overflow:auto"><table><thead><tr><th>কোড</th><th>কোর্সের নাম</th><th>ধরন</th><th>থিওরি</th><th>ল্যাব</th><th>ক্রেডিট</th><th>আইডি</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+  <div class="row" style="margin-top:12px"><button class="btn ghost fit" id="addr">কোর্স যোগ করুন</button><span id="tot" class="hint"></span><button class="btn fit" id="csave">সেভ করুন</button></div>`;
+  let rows=s.courses.map(c=>({...c}));
+  const draw=()=>{$('#rows').innerHTML=rows.map((c,i)=>`<tr><td><input data-i="${i}" data-k="code" value="${esc(c.code)}" style="min-width:120px"></td><td><input data-i="${i}" data-k="title" value="${esc(c.title)}" style="min-width:220px"></td><td><select data-i="${i}" data-k="cat"><option ${c.cat==='Core'?'selected':''}>Core</option><option ${c.cat==='GED'?'selected':''}>GED</option></select></td><td><input data-i="${i}" data-k="th" type="number" step="0.5" value="${c.th}" style="width:70px"></td><td><input data-i="${i}" data-k="lab" type="number" step="0.5" value="${c.lab}" style="width:70px"></td><td><input data-i="${i}" data-k="cr" type="number" step="0.5" value="${c.cr}" style="width:70px"></td><td><input data-i="${i}" data-k="id" value="${esc(c.id||'')}" style="width:100px"></td><td><button class="btn red sm" data-x="${i}" aria-label="মুছুন">×</button></td></tr>`).join('');tot();};
+  const tot=()=>{$('#tot').textContent='মোট ক্রেডিট: '+rows.reduce((a,c)=>a+(+c.cr||0),0);};
+  draw();
+  $('#rows').oninput=e=>{const t=e.target;if(t.dataset.i===undefined)return;const c=rows[+t.dataset.i];c[t.dataset.k]=['th','lab','cr'].includes(t.dataset.k)?+t.value:t.value;if(t.dataset.k==='cr')tot();};
+  $('#rows').onclick=e=>{const b=e.target.closest('[data-x]');if(b){rows.splice(+b.dataset.x,1);draw();}};
+  $('#addr').onclick=()=>{rows.push({code:'',title:'',cat:'Core',th:3,lab:0,cr:3});draw();};
+  $('#sem').onchange=e=>{semIdx=+e.target.value;courses();};
+  $('#csave').onclick=async()=>{try{await api('PUT',`/api/curriculum/${s.y}/${s.s}`,{name:$('#sname').value,courses:rows.map(c=>({...c,id:(c.id||'').trim()}))});await load();courses();flash('সেভ হয়েছে');}catch(er){flash(er.message,false);}};
+}
+
+/* ---------- কোর্স সিলেবাস ---------- */
+let detId='';
+function details(){
+  const ids=new Set(Object.keys(D.details)); D.curriculum.forEach(s=>s.courses.forEach(c=>{if(c.id)ids.add(c.id);}));
+  const list=[...ids].sort(); if(!detId||!ids.has(detId)) detId=list[0]||'';
+  const d=D.details[detId]||{rationale:'',objectives:[],contents:[],cos:[],refs:[]};
+  const name=(()=>{for(const s of D.curriculum)for(const c of s.courses)if(c.id===detId)return c.title;return '';})();
+  $('#pane').innerHTML=`<div id="msg"></div><div class="row"><div><label for="did">কোর্স আইডি</label><select id="did">${list.map(i=>`<option ${i===detId?'selected':''}>${esc(i)}</option>`).join('')}</select></div><div><label for="dnew">অথবা নতুন আইডি</label><input id="dnew" placeholder="যেমন GEB2125"></div><div class="fit"><label>&nbsp;</label><button class="btn ghost" id="dgo">নতুন আইডি খুলুন</button></div></div>
+  <h3 style="margin-top:14px">${esc(detId)} ${name?'— '+esc(name):''}</h3>
+  <label for="dr">কোর্স কেন (Rationale)</label><textarea id="dr">${esc(d.rationale)}</textarea>
+  <label for="do">উদ্দেশ্য (প্রতি লাইনে একটি)</label><textarea id="do">${esc(d.objectives.join('\n'))}</textarea>
+  <label for="dc">কনটেন্ট, প্রতিটি ব্লকের মাঝে একটি ফাঁকা লাইন; ব্লকের প্রথম লাইন শিরোনাম, বাকিটা বিবরণ</label>
+  <textarea id="dc" style="min-height:240px">${esc(d.contents.map(x=>x.h+'\n'+x.t).join('\n\n'))}</textarea>
+  <div class="row"><div><label for="dco">CO (প্রতি লাইনে একটি)</label><textarea id="dco">${esc(d.cos.join('\n'))}</textarea></div><div><label for="dref">রেফারেন্স বই (প্রতি লাইনে একটি)</label><textarea id="dref">${esc(d.refs.join('\n'))}</textarea></div></div>
+  <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="dp" style="width:auto" ${d.partial?'checked':''}> আংশিক কনটেন্ট (সাইটে সতর্কবার্তা দেখাবে)</label>
+  <div class="row" style="margin-top:14px"><button class="btn fit" id="dsave">সেভ করুন</button>${D.details[detId]?'<button class="btn red fit" id="ddel">এই সিলেবাস মুছুন</button>':''}</div>`;
+  $('#did').onchange=e=>{detId=e.target.value;details();};
+  $('#dgo').onclick=()=>{const v=$('#dnew').value.trim();if(!/^[A-Za-z0-9_]{2,20}$/.test(v))return flash('আইডি শুধু ইংরেজি অক্ষর/সংখ্যা (২–২০)',false);detId=v;if(!D.details[v])D.details[v]={rationale:'',objectives:[],contents:[],cos:[],refs:[]};details();};
+  const lines=v=>v.split('\n').map(s=>s.trim()).filter(Boolean);
+  $('#dsave').onclick=async()=>{try{
+    const contents=$('#dc').value.split(/\n\s*\n/).map(b=>{const l=b.trim().split('\n');return {h:l[0].trim(),t:l.slice(1).join(' ').trim()};}).filter(x=>x.h);
+    await api('PUT','/api/details/'+detId,{rationale:$('#dr').value,objectives:lines($('#do').value),contents,cos:lines($('#dco').value),refs:lines($('#dref').value),partial:$('#dp').checked});await load();details();flash('সেভ হয়েছে');}catch(er){flash(er.message,false);}};
+  if($('#ddel'))$('#ddel').onclick=async()=>{if(!confirm('মুছে ফেলবেন?'))return;try{await api('DELETE','/api/details/'+detId);await load();details();flash('মুছে ফেলা হয়েছে');}catch(er){flash(er.message,false);}};
+}
+
+/* ---------- MCQ ও ছোট প্রশ্ন ---------- */
+let quizC='';
+function quizLine(z){
+  const e=z.exp?' | exp: '+z.exp:'';
+  return z.type==='mcq'?'Q: '+z.q+' | '+z.opts.map((o,i)=>'ABCDEFGH'[i]+') '+o).join(' | ')+' | ans: '+'ABCDEFGH'[z.ans]+e:'S: '+z.q+' | ans: '+z.accept.join(' ; ')+e;
+}
+function quiz(){
+  const ids=Object.keys(D.subjects); if(!quizC||!D.subjects[quizC]) quizC=ids[0]||'';
+  const list=(D.quiz||[]).filter(z=>z.c===quizC);
+  $('#pane').innerHTML=`<div id="msg"></div><div class="row"><div><label for="qc">কোর্স</label><select id="qc">${subjOpts(quizC)}</select></div><div class="fit"><span class="chip">${list.filter(z=>z.type==='mcq').length}টি MCQ</span> <span class="chip">${list.filter(z=>z.type==='short').length}টি ছোট প্রশ্ন</span></div></div>
+  <p class="hint">প্রতি লাইনে একটি প্রশ্ন। এই কোর্সের <b>পুরো তালিকা</b> সেভ করলে আগেরটি বদলে যাবে। <code>#</code> দিয়ে শুরু লাইন বাদ যায়।</p>
+  <pre class="code">MCQ :  Q: প্রশ্ন | A) অপশন ১ | B) অপশন ২ | C) অপশন ৩ | D) অপশন ৪ | ans: B | exp: ব্যাখ্যা (ঐচ্ছিক)
+ছোট:  S: প্রশ্ন | ans: সঠিক উত্তর ১ ; সঠিক উত্তর ২ | exp: ব্যাখ্যা (ঐচ্ছিক)</pre>
+  <p class="hint">ছোট উত্তরে ছোটখাটো বানান ভুল ও বড়/ছোট হাতের পার্থক্য নিজে সামলানো হয়। একাধিক গ্রহণযোগ্য উত্তর <code> ; </code> দিয়ে আলাদা করুন।</p>
+  <textarea id="qt" style="min-height:360px" spellcheck="false" placeholder="Q: Which enzyme joins DNA fragments? | A) Helicase | B) Ligase | C) Primase | D) Gyrase | ans: B | exp: DNA ligase phosphodiester bond তৈরি করে&#10;S: Full form of PCR? | ans: Polymerase Chain Reaction">${esc(list.map(quizLine).join('\n'))}</textarea>
+  <div class="row" style="margin-top:12px"><button class="btn fit" id="qsave">সেভ করুন</button></div>`;
+  $('#qc').onchange=e=>{quizC=e.target.value;quiz();};
+  $('#qsave').onclick=async()=>{try{const r=await api('PUT','/api/quiz/'+quizC,{text:$('#qt').value});await load();quiz();flash(r.n+'টি প্রশ্ন সেভ হয়েছে');}catch(er){flash(er.message,false);}};
+}
+
+/* ---------- সেটিং ---------- */
+async function settings(){
+  const st=D.settings; let ai={on:false,providers:[]}; try{ai=await (await fetch('/api/grade-status')).json();}catch(e){}
+  $('#pane').innerHTML=`<div id="msg"></div><div class="cols"><div><h3>সাইট ও অ্যাপ</h3>
+   <label for="s1">সাইটের নাম (অ্যাপ ইনস্টলের সময় দেখায়)</label><input id="s1" value="${esc(st.siteName)}">
+   <label for="s2">ছোট নাম (ফোনের হোম স্ক্রিনে)</label><input id="s2" value="${esc(st.shortName)}" maxlength="14">
+   <div class="row"><div><label for="s3">থিম রঙ</label><input id="s3" type="color" value="${esc(st.themeColor)}" style="height:40px;padding:3px"></div><div><label for="s4">স্প্ল্যাশ ব্যাকগ্রাউন্ড</label><input id="s4" type="color" value="${esc(st.bgColor)}" style="height:40px;padding:3px"></div></div>
+   <p class="hint">আইকন বদলাতে <code>public/icons/</code>-এর চারটি PNG (icon-192, icon-512, maskable-512, apple-touch-icon) নিজের ছবি দিয়ে বদলান। নাম/রঙ বদলালে ব্যবহারকারীর ফোনে ইনস্টল করা অ্যাপে কিছুদিন পরে প্রতিফলিত হয়।</p>
+   <h3 style="margin-top:22px">পরীক্ষা ও ভুল খাতা</h3>
+   <div class="row"><div><label for="s5">প্রতি নম্বরে কত মিনিট</label><input id="s5" type="number" step="0.5" min="0.5" value="${st.minsPerMark}"></div><div><label for="s6">এর নিচে পেলে ভুল খাতায় যাবে (%)</label><input id="s6" type="number" min="1" max="100" value="${st.wrongBelowPct}"></div><div><label for="s7">পরপর কতবার ঠিক হলে সরবে</label><input id="s7" type="number" min="1" max="10" value="${st.masterStreak}"></div></div>
+   <label>মক পরীক্ষার ডিফল্ট</label><div class="row"><div><input id="m1" type="number" min="0" value="${st.mock.mcq}" aria-label="MCQ সংখ্যা"><span class="hint">MCQ</span></div><div><input id="m2" type="number" min="0" value="${st.mock.short}" aria-label="ছোট প্রশ্ন সংখ্যা"><span class="hint">ছোট প্রশ্ন</span></div><div><input id="m3" type="number" min="0" value="${st.mock.written}" aria-label="লিখিত সংখ্যা"><span class="hint">লিখিত</span></div><div><input id="m4" type="number" min="5" value="${st.mock.mins}" aria-label="সময়"><span class="hint">মিনিট</span></div></div></div>
+  <div><h3>নোটিসের ক্যাটাগরি</h3><label for="s8">প্রতি লাইনে একটি</label><textarea id="s8" style="min-height:140px">${esc(st.noticeCats.join('\n'))}</textarea>
+   <h3 style="margin-top:22px">ফ্রি AI (ঐচ্ছিক)</h3>
+   <div class="msg ${ai.on?'ok':'err'}" style="margin-top:6px">${ai.on?'চালু: '+esc(ai.providers.join(', ')):'বন্ধ (কোনো key সেট করা নেই), শিক্ষার্থীদের AI বাটন দেখানো হচ্ছে না'}</div>
+   <label for="s9">AI ব্যবহারের আগে শিক্ষার্থীকে যে সতর্কবার্তা দেখাবে</label><textarea id="s9" style="min-height:110px">${esc(st.aiNotice)}</textarea>
+   <p class="hint">Key সার্ভারের পরিবেশ ভেরিয়েবলে বসে, ব্রাউজারে বা এই প্যানেলে নয় (নিরাপত্তার জন্য):</p>
+   <pre class="code">GEMINI_API_KEY=...   (Google AI Studio, ফ্রি tier)
+GROQ_API_KEY=...     (console.groq.com, ফ্রি tier)
+AI_ORDER=gemini,groq   (কোনটা আগে চেষ্টা হবে)
+GEMINI_MODEL=...  GROQ_MODEL=...  (মডেলের নাম বদলালে)</pre></div></div>
+  <div class="row" style="margin-top:16px"><button class="btn fit" id="ssave">সেটিং সেভ করুন</button></div>`;
+  $('#ssave').onclick=async()=>{try{await api('PUT','/api/settings',{siteName:$('#s1').value,shortName:$('#s2').value,themeColor:$('#s3').value,bgColor:$('#s4').value,minsPerMark:+$('#s5').value,wrongBelowPct:+$('#s6').value,masterStreak:+$('#s7').value,mock:{mcq:+$('#m1').value,short:+$('#m2').value,written:+$('#m3').value,mins:+$('#m4').value},noticeCats:$('#s8').value.split('\n'),aiNotice:$('#s9').value});await load();await settings();flash('সেটিং সেভ হয়েছে');}catch(er){flash(er.message,false);}};
+}
+
+/* ---------- কমিউনিটি ---------- */
+let CO=null, coView='pending';
+async function community(){
+  try{ CO=await api('GET','/api/admin/c/overview'); }catch(er){ $('#pane').innerHTML='<div class="msg err">'+esc(er.message)+'</div>'; return; }
+  const cm=D.settings.community||{}, pend=CO.users.filter(u=>u.status==='pending'), rows=us=>us.length?us.map(u=>`<div class="li"><div class="t"><b>${esc(u.name)}</b> <span class="chip">${esc(u.sid)}</span> <span class="chip">${esc(u.batch)}</span> ${u.role!=='student'?`<span class="chip sig">${u.role}</span>`:''} ${u.status==='blocked'?'<span class="chip sig">বন্ধ</span>':''}<br><small>${u.email?esc(u.email)+' · ':''}${u.phone?esc(u.phone)+' · ':''}${u.posts}টি পোস্ট</small></div>
+    ${u.status==='pending'?`<button class="btn fit" data-ap="${u.id}">অনুমোদন</button><button class="btn ghost fit" data-del="${u.id}">বাতিল</button>`:`<select data-role="${u.id}" aria-label="ভূমিকা"><option value="student" ${u.role==='student'?'selected':''}>শিক্ষার্থী</option><option value="mod" ${u.role==='mod'?'selected':''}>মডারেটর</option><option value="teacher" ${u.role==='teacher'?'selected':''}>শিক্ষক</option><option value="cr" ${u.role==='cr'?'selected':''}>ক্লাস রিপ্রেজেন্টেটিভ (CR)</option></select><button class="btn ghost fit" data-blk="${u.id}">${u.status==='blocked'?'চালু করুন':'বন্ধ করুন'}</button><button class="btn ghost fit" data-pw="${u.id}">নতুন পাসওয়ার্ড</button><button class="btn ghost fit" data-del="${u.id}">মুছুন</button>`}</div>`).join(''):'<p class="hint">কেউ নেই।</p>';
+  const body={pending:`<div class="row"><button class="btn fit" id="apAll" ${pend.length?'':'disabled'}>সবাইকে অনুমোদন (${pend.length})</button></div>`+'<div class="list">'+rows(pend)+'</div>',
+   members:'<div class="list">'+rows(CO.users.filter(u=>u.status!=='pending'))+'</div>',
+   reports:CO.reports.length?'<div class="list">'+CO.reports.map(r=>`<div class="li"><div class="t"><b>${r.kind==='post'?'পোস্ট':r.kind==='note'?'নোট':'কমেন্ট'}</b> — লেখক: ${esc(r.author)}, রিপোর্টকারী: ${esc(r.reporter)}<br><small>কারণ: ${esc(r.reason||'—')}</small><p style="margin:4px 0">${esc(r.text)}</p></div><button class="btn ghost fit" data-ra="hide" data-r="${r.id}">লুকান</button><button class="btn ghost fit" data-ra="restore" data-r="${r.id}">ঠিক আছে (দেখান)</button><button class="btn ghost fit" data-ra="delete" data-r="${r.id}">মুছুন</button><button class="btn ghost fit" data-ra="dismiss" data-r="${r.id}">বাদ দিন</button></div>`).join('')+'</div>':'<p class="hint">কোনো রিপোর্ট নেই। ৩ জন আলাদা সদস্য রিপোর্ট করলে কনটেন্ট নিজে লুকিয়ে যায়, এখানে এসে সিদ্ধান্ত নিন।</p>',
+   notes:'<div id="coX"><p class="hint">লোড হচ্ছে…</p></div>', polls:'<div id="coX"><p class="hint">লোড হচ্ছে…</p></div>', vsubs:'<div id="coX"><p class="hint">লোড হচ্ছে…</p></div>',
+   settings:`<div class="cols"><div><label><input type="checkbox" id="cOpen" ${cm.open?'checked':''}> নতুন নিবন্ধন চালু</label><label><input type="checkbox" id="cApp" ${cm.needApproval?'checked':''}> নিবন্ধনের পর অ্যাডমিন অনুমোদন লাগবে (সুপারিশ করি)</label>
+    <label><input type="checkbox" id="cBd" ${cm.birthdayPublic?'checked':''}> আজকের জন্মদিন (নাম ও ছবি) লগইন ছাড়া সবাইকে হোমপেজে দেখান (না চাপলে শুধু সদস্যরা দেখে)</label>
+    <label for="cCode">জয়েন কোড (ঐচ্ছিক, ফাঁকা রাখলে লাগবে না)</label><input id="cCode" value="${esc(cm.joinCode||'')}" placeholder="ক্লাস গ্রুপে শেয়ার করবেন">
+    <label for="cMax">পোস্টের সর্বোচ্চ অক্ষর</label><input id="cMax" type="number" value="${cm.maxPost||3000}"></div>
+    <div><label for="cBat">ব্যাচ/সেশনের তালিকা (প্রতি লাইনে একটি)</label><textarea id="cBat" style="min-height:150px">${esc((cm.batches||[]).join('\n'))}</textarea></div></div><div class="row" style="margin-top:12px"><button class="btn fit" id="cSave">সেভ করুন</button></div><div class="row" style="margin-top:18px"><button class="btn fit" id="gReset" style="background:#B3261E">ব্যাচ ওয়ারের স্কোর রিসেট (নতুন সিজন)</button></div><p style="color:var(--muted);font-size:14px">সব ব্যাচের দৈনিক কুইজের পয়েন্ট শূন্য হবে। সদস্যদের লেভেল ও ব্যাজ থাকবে। আগে data/community.json-এর ব্যাকআপ রাখুন।</p>`}[coView];
+  $('#pane').innerHTML=`<div id="msg"></div><div class="row"><span class="chip">${CO.stats.users} সদস্য</span><span class="chip">${CO.stats.posts} পোস্ট</span><span class="chip">${CO.stats.comments} কমেন্ট</span></div>
+   <div class="subtabs">${[['pending','অপেক্ষমাণ ('+pend.length+')'],['members','সদস্য'],['notes','নোট অনুমোদন'+(CO.notesPending?' ('+CO.notesPending+')':'')],['polls','পোল ও সার্ভে'],['vsubs','ভাইভা জমা'+(CO.vivaFresh?' ('+CO.vivaFresh+')':'')],['reports','রিপোর্ট ('+CO.reports.length+')'],['settings','সেটিং']].map(t=>`<button data-cv="${t[0]}" class="${coView===t[0]?'on':''}">${t[1]}</button>`).join('')}</div>${body}`;
+  const act=async(fn,m)=>{try{await fn();await load();await community();if(m)flash(m);}catch(er){flash(er.message,false);}};
+  if(coView==='notes')coNotes(); else if(coView==='polls')coPolls(); else if(coView==='vsubs')coViva();
+  document.querySelectorAll('[data-cv]').forEach(b=>b.onclick=()=>{coView=b.dataset.cv;community();});
+  const on=(sel,fn)=>document.querySelectorAll(sel).forEach(fn);
+  on('[data-ap]',b=>b.onclick=()=>act(()=>api('PUT','/api/admin/c/users/'+b.dataset.ap,{status:'active'}),'অনুমোদন হয়েছে'));
+  on('[data-del]',b=>b.onclick=()=>{if(confirm('এই সদস্য ও তার সব পোস্ট/কমেন্ট মুছে যাবে। নিশ্চিত?'))act(()=>api('DELETE','/api/admin/c/users/'+b.dataset.del),'মুছে ফেলা হয়েছে');});
+  on('[data-blk]',b=>b.onclick=()=>{const u=CO.users.find(x=>x.id==b.dataset.blk);act(()=>api('PUT','/api/admin/c/users/'+u.id,{status:u.status==='blocked'?'active':'blocked'}),'হয়েছে');});
+  on('[data-role]',s=>s.onchange=()=>act(()=>api('PUT','/api/admin/c/users/'+s.dataset.role,{role:s.value}),'ভূমিকা বদলেছে'));
+  on('[data-pw]',b=>b.onclick=()=>{const pw=prompt('নতুন পাসওয়ার্ড (অন্তত ৬ অক্ষর):');if(pw)act(()=>api('POST','/api/admin/c/users/'+b.dataset.pw+'/password',{password:pw}),'পাসওয়ার্ড বদলেছে, সদস্যকে জানিয়ে দিন');});
+  on('[data-ra]',b=>b.onclick=()=>act(()=>api('PUT','/api/admin/c/reports/'+b.dataset.r,{action:b.dataset.ra}),'হয়েছে'));
+  const all=$('#apAll'); if(all) all.onclick=()=>act(()=>api('POST','/api/admin/c/approve-all',{}),'সবাইকে অনুমোদন দেওয়া হয়েছে');
+  const gr=$('#gReset'); if(gr) gr.onclick=()=>{if(confirm('ব্যাচ ওয়ারের সব স্কোর মুছে যাবে। নিশ্চিত?'))act(()=>api('POST','/api/admin/c/game-reset',{confirm:true}),'ব্যাচ ওয়ার রিসেট হয়েছে');};
+  const sv=$('#cSave'); if(sv) sv.onclick=()=>act(()=>api('PUT','/api/settings',{community:{open:$('#cOpen').checked,needApproval:$('#cApp').checked,joinCode:$('#cCode').value,birthdayPublic:$('#cBd').checked,maxPost:+$('#cMax').value,batches:$('#cBat').value.split('\n')}}),'সেভ হয়েছে');
+}
+
+/* ---------- v3.7: নোট অনুমোদন, পোল, ভাইভা জমা ও ভাইভা প্রশ্ন ---------- */
+const exOf=e=>String(e||'').slice(1).toUpperCase();
+async function coNotes(){
+  const box=$('#coX'); let j; try{ j=await api('GET','/api/admin/c/notes'); }catch(er){ box.innerHTML='<div class="msg err">'+esc(er.message)+'</div>'; return; }
+  box.innerHTML='<p class="hint">সদস্যদের আপলোড করা নোট। মডারেটররাও সাইট থেকে অনুমোদন দিতে পারেন। অপেক্ষমাণ আগে দেখানো হচ্ছে।</p><div class="list">'+(j.notes.map(n=>`<div class="li"><div class="t"><b>${esc(n.title)}</b> <span class="chip">${esc((D.subjects[n.c]||{n:n.c}).n)}</span> <span class="chip">${esc(exOf(n.ext))}</span> <span class="chip ${n.status==='approved'?'':'sig'}">${n.status==='pending'?'অপেক্ষমাণ':n.status==='approved'?(n.hidden?'লুকানো':'প্রকাশিত'):'বাতিল'}</span><br><small>${esc(n.who)} · ${esc(n.author.batch)} · 👍 ${n.votes} · ⬇ ${n.dl}${n.reason?' · কারণ: '+esc(n.reason):''}${n.desc?'<br>'+esc(n.desc):''}</small></div>
+    <a class="btn ghost fit" style="text-decoration:none;text-align:center" href="/api/admin/c/notes/${n.id}/file" target="_blank" rel="noopener">খুলুন</a>
+    ${n.status==='pending'?`<button class="btn fit" data-nr="approve" data-n="${n.id}">অনুমোদন</button><button class="btn ghost fit" data-nr="reject" data-n="${n.id}">বাতিল</button>`:''}${n.hidden?`<button class="btn ghost fit" data-nr="restore" data-n="${n.id}">আবার দেখান</button>`:''}<button class="btn ghost fit" data-nd="${n.id}">মুছুন</button></div>`).join('')||'<p class="hint">কোনো নোট নেই।</p>')+'</div>';
+  box.querySelectorAll('[data-nr]').forEach(b=>b.onclick=async()=>{ let reason=''; if(b.dataset.nr==='reject'){ reason=prompt('বাতিলের কারণ (আপলোডকারী দেখবেন, ঐচ্ছিক)'); if(reason===null) return; } try{ await api('POST','/api/admin/c/notes/'+b.dataset.n+'/review',{action:b.dataset.nr,reason}); coNotes(); }catch(er){ flash(er.message,false); } });
+  box.querySelectorAll('[data-nd]').forEach(b=>b.onclick=async()=>{ if(!confirm('নোট ও ফাইল মুছে যাবে। নিশ্চিত?')) return; try{ await api('DELETE','/api/admin/c/notes/'+b.dataset.nd); coNotes(); }catch(er){ flash(er.message,false); } });
+}
+async function coPolls(){
+  const box=$('#coX'); let j; try{ j=await api('GET','/api/admin/c/polls'); }catch(er){ box.innerHTML='<div class="msg err">'+esc(er.message)+'</div>'; return; }
+  const bars=p=>p.results?p.qs.map((q,i)=>{ const x=p.results[i]; let h=`<div style="margin:8px 0"><b>${esc(q.q)}</b> <small>(${x.n} উত্তর)</small>`;
+    if(q.t==='single'||q.t==='multi'){ const mx=Math.max(1,...x.counts); h+=q.opts.map((o,k)=>`<div style="display:grid;grid-template-columns:1fr 2fr auto;gap:8px;align-items:center;margin:3px 0"><span>${esc(o)}</span><span style="background:var(--line);border-radius:9px;height:12px;overflow:hidden"><i style="display:block;height:100%;width:${x.counts[k]/mx*100}%;background:#0B8F73"></i></span><b>${x.counts[k]}</b></div>`).join(''); }
+    else if(q.t==='rating') h+=`<div>গড় <b>${x.avg}</b>/৫ · ${x.counts.map((c,k)=>(k+1)+'★:'+c).join('  ')}</div>`;
+    else h+=(x.texts&&x.texts.length?'<ul>'+x.texts.map(t=>'<li>'+esc(t)+'</li>').join('')+'</ul>':'<div class="hint">কোনো লেখা নেই</div>');
+    return h+'</div>'; }).join(''):'';
+  box.innerHTML=`<div class="cols"><div><h3>নতুন পোল / সার্ভে (অ্যাডমিন)</h3><p class="hint">ব্যাচ বাছলে শুধু সেই ব্যাচ দেখবে ও নোটিফিকেশন পাবে; না বাছলে সবাই। CR-রা নিজের ব্যাচের জন্য সাইট থেকেই দিতে পারেন (সদস্যের ভূমিকা "CR" করে দিন)।</p><div id="pbBox"></div></div>
+  <div><h3>সব পোল (${j.polls.length})</h3><div class="list">${j.polls.map(p=>`<div class="li" style="display:block"><div class="row"><div class="t"><b>${esc(p.title)}</b> <span class="chip ${p.open?'':'sig'}">${p.open?'চলছে':'বন্ধ'}</span><br><small>${esc(p.by)} · ${p.target.length?'ব্যাচ '+esc(p.target.join(', ')):'সবার জন্য'} · ${p.total} জন উত্তর দিয়েছে · ${p.anon?'নামহীন':'নামসহ'}</small></div><button class="btn ghost fit" data-pc="${p.id}">${p.open?'বন্ধ করুন':'চালু করুন'}</button><button class="btn ghost fit" data-pd="${p.id}">মুছুন</button></div>${bars(p)}${p.people?`<small>উত্তরদাতা: ${p.people.map(x=>esc(x.name)).join(', ')}</small>`:''}</div>`).join('')||'<p class="hint">কোনো পোল নেই।</p>'}</div></div></div>`;
+  PollBuilder.mount($('#pbBox'),{batches:j.batches,onSubmit:async b=>{ await api('POST','/api/admin/c/polls',b); flash('পোল প্রকাশিত হয়েছে, নোটিফিকেশন গেছে'); coPolls(); }});
+  box.querySelectorAll('[data-pc]').forEach(b=>b.onclick=async()=>{ try{ await api('POST','/api/admin/c/polls/'+b.dataset.pc+'/close',{}); coPolls(); }catch(er){ flash(er.message,false); } });
+  box.querySelectorAll('[data-pd]').forEach(b=>b.onclick=async()=>{ if(!confirm('পোল ও সব উত্তর মুছে যাবে। নিশ্চিত?')) return; try{ await api('DELETE','/api/admin/c/polls/'+b.dataset.pd); coPolls(); }catch(er){ flash(er.message,false); } });
+}
+async function coViva(){
+  const box=$('#coX'); let j; try{ j=await api('GET','/api/admin/c/viva'); }catch(er){ box.innerHTML='<div class="msg err">'+esc(er.message)+'</div>'; return; }
+  box.innerHTML='<p class="hint">সদস্যদের জমা দেওয়া ভাইভা অডিও। শুনে প্রতি প্রশ্নে নম্বর দিন, সেভ করলেই সদস্য নিজের পাতায় নম্বর দেখবেন ও নোটিফিকেশন পাবেন। নম্বর দেওয়ার পরও আবার বদলানো যায়।</p><div class="list">'+(j.subs.map(s=>`<div class="li" style="display:block" data-sub="${s.id}"><div class="row"><div class="t"><b>${esc(s.title)}</b> <span class="chip ${s.status==='marked'?'':'sig'}">${s.status==='marked'?'নম্বর দেওয়া: '+s.total+'/'+s.max:'নতুন'}</span><br><small>${esc(s.who)} · ${esc(s.batch)} ${s.sid?'· '+esc(s.sid):''} · ${new Date(s.created).toLocaleString('bn-BD')}</small></div><button class="btn ghost fit" data-vd="${s.id}">মুছুন</button></div>
+    ${s.items.map(i=>`<div style="border-top:1px solid var(--line);padding:8px 0"><div>${i.idx+1}. ${esc(i.q)} ${i.stage?'<span class="chip">'+esc(i.stage)+'</span>':''}</div><div class="row" style="align-items:center">${i.url?`<audio controls preload="none" src="${i.url}" style="flex:3;min-width:220px"></audio>`:'<small>অডিও নেই</small>'}<div style="flex:1;min-width:120px"><label>নম্বর (সর্বোচ্চ ${i.max})</label><input type="number" min="0" max="${i.max}" step="0.5" data-m="${i.idx}" value="${i.got==null?'':i.got}"></div></div></div>`).join('')}
+    <label>মন্তব্য (সদস্য দেখবেন, ঐচ্ছিক)</label><textarea data-c="${s.id}" maxlength="600" style="min-height:60px">${esc(s.comment)}</textarea><div class="row" style="margin-top:8px"><button class="btn fit" data-vs="${s.id}">নম্বর সেভ করুন</button></div></div>`).join('')||'<p class="hint">এখনো কেউ ভাইভা জমা দেয়নি।</p>')+'</div>';
+  box.querySelectorAll('[data-vs]').forEach(b=>b.onclick=async()=>{ const el=box.querySelector(`[data-sub="${b.dataset.vs}"]`), marks={}; el.querySelectorAll('[data-m]').forEach(i=>{ if(i.value!=='') marks[i.dataset.m]=+i.value; }); try{ await api('PUT','/api/admin/c/viva/'+b.dataset.vs,{marks,comment:el.querySelector('textarea').value}); flash('নম্বর সেভ হয়েছে'); coViva(); }catch(er){ flash(er.message,false); } });
+  box.querySelectorAll('[data-vd]').forEach(b=>b.onclick=async()=>{ if(!confirm('জমা ও অডিও মুছে যাবে। নিশ্চিত?')) return; try{ await api('DELETE','/api/admin/c/viva/'+b.dataset.vd); coViva(); }catch(er){ flash(er.message,false); } });
+}
+let vivaC='';
+function vivaText(sets){ return sets.map(st=>'== '+st.title+'\n'+st.qs.map(q=>(q.f?'> ':'')+(q.stage?'['+q.stage+'] ':'')+q.q.replace(/ \| /g,' / ')+(q.a?' | ans: '+q.a.replace(/ \| /g,' / '):'')+' | t: '+q.t+' | m: '+q.m).join('\n')).join('\n\n'); }
+function viva(){
+  const ids=Object.keys(D.subjects); if(!vivaC||!D.subjects[vivaC]) vivaC=ids[0]||'';
+  const sets=(D.viva||[]).filter(x=>x.c===vivaC), nq=sets.reduce((a,x)=>a+x.qs.length,0);
+  $('#pane').innerHTML=`<div id="msg"></div><div class="row"><div><label for="vc">কোর্স</label><select id="vc">${subjOpts(vivaC)}</select></div><div class="fit"><span class="chip">${sets.length}টি সেট</span> <span class="chip">${nq}টি ধাপ</span></div></div>
+  <p class="hint">আসল ভাইভায় শিক্ষক যে ক্রমে প্রশ্ন করেন, ঠিক সেই ক্রমে লিখুন। প্রতিটি <b>সেট</b> একটি পূর্ণ ভাইভা (র‍্যান্ডমে একটি সেট আসে), সেটের ভেতরে ক্রম ঠিক থাকে। <code>ans:</code> হলো ভাইভায় মুখে বলার মতো মডেল উত্তর। এই কোর্সের <b>পুরো তালিকা</b> সেভ করলে আগেরটি বদলে যাবে। <code>#</code> দিয়ে শুরু লাইন বাদ যায়।</p>
+  <pre class="code">== সেটের নাম
+[পরিচয়] আপনার নাম ও রোল বলুন। | ans: মডেল উত্তর | t: 20 | m: 0
+[ওয়ার্ম-আপ] প্রশ্ন | ans: উত্তর | t: 45 | m: 5
+[মূল প্রশ্ন] প্রশ্ন | ans: উত্তর | t: 60 | m: 5
+> [ফলো-আপ] আগের প্রশ্নের ফলো-আপ | ans: উত্তর | t: 40 | m: 3</pre>
+  <p class="hint">[ধাপ] ঐচ্ছিক (পরিচয়, ওয়ার্ম-আপ, মূল প্রশ্ন, ফলো-আপ…)। <code>t:</code> উত্তরের সময় সেকেন্ডে (ডিফল্ট ৬০), <code>m:</code> নম্বর (ডিফল্ট ৫)। <code>&gt;</code> দিয়ে শুরু মানে ফলো-আপ, যা "ফলো-আপ বাদ" অপশনে ছেড়ে দেওয়া যায়। "পরিচয়" ধাপ মিশ্র বোর্ডে শুধু প্রথমবার আসে। একটি সেটে সর্বোচ্চ ৪০ ধাপ।</p>
+  <textarea id="vt" style="min-height:420px" spellcheck="false">${esc(vivaText(sets))}</textarea>
+  <div class="row" style="margin-top:12px"><button class="btn fit" id="vsave">সেভ করুন</button></div>`;
+  $('#vc').onchange=e=>{vivaC=e.target.value;viva();};
+  $('#vsave').onclick=async()=>{try{const r=await api('PUT','/api/viva/'+vivaC,{text:$('#vt').value});await load();viva();flash(r.sets+'টি সেট, '+r.n+'টি ধাপ সেভ হয়েছে');}catch(er){flash(er.message,false);}};
+}
+
+/* ---------- নোটিস ---------- */
+function notices(){
+  $('#pane').innerHTML=`<div id="msg"></div><div class="cols"><div><h3>নতুন নোটিস</h3><label for="nt">লেখা</label><textarea id="nt" maxlength="400" placeholder="যেমন: ২য় টার্ম টেস্ট ১৫ নভেম্বর"></textarea><div class="row"><div><label for="ntype">ধরন</label><select id="ntype"><option value="info">সাধারণ</option><option value="new">নতুন</option><option value="warn">জরুরি</option></select></div><div><label for="ncat">ক্যাটাগরি</label><select id="ncat">${(D.settings.noticeCats||['সাধারণ']).map(c=>`<option>${esc(c)}</option>`).join('')}</select></div><div><label style="margin-top:34px;display:flex;gap:8px;align-items:center"><input type="checkbox" id="npin" style="width:auto"> উপরে পিন করুন</label></div></div><button class="btn" id="nadd" style="margin-top:12px">প্রকাশ করুন</button></div>
+  <div><h3>চলমান নোটিস (${D.notices.length})</h3><div class="list">${D.notices.map(n=>`<div class="li"><div class="t">${esc(n.text)}<small>${esc(n.date)}, ${esc(n.cat||'সাধারণ')}, ${n.type}${n.pinned?', পিন করা':''}</small></div><button class="btn red sm" data-d="${n.id}">মুছুন</button></div>`).join('')||'<div class="li">কিছু নেই</div>'}</div></div></div>`;
+  $('#nadd').onclick=async()=>{try{await api('POST','/api/notices',{text:$('#nt').value,type:$('#ntype').value,cat:$('#ncat').value,pinned:$('#npin').checked});await load();notices();flash('প্রকাশিত হয়েছে');}catch(er){flash(er.message,false);}};
+  $('#pane').onclick=async e=>{const b=e.target.closest('[data-d]');if(b&&tab==='notices'){await api('DELETE','/api/notices/'+b.dataset.d);await load();notices();}};
+}
+
+/* ---------- ফাইল ---------- */
+function files(){
+  const sz=n=>n>1048576?(n/1048576).toFixed(1)+' MB':Math.round(n/1024)+' KB';
+  $('#pane').innerHTML=`<div id="msg"></div><div class="cols"><div><h3>ফাইল আপলোড</h3><label for="ft">শিরোনাম</label><input id="ft" placeholder="যেমন: Microbiology Lecture 3"><label for="fc">কোর্স (ঐচ্ছিক)</label><select id="fc"><option value="">কোনোটি নয়</option>${subjOpts('')}</select><label for="ff">ফাইল (সর্বোচ্চ ১৫ MB; pdf, png, jpg, docx, pptx, xlsx, txt, zip)</label><input type="file" id="ff"><button class="btn" id="fup" style="margin-top:12px">আপলোড</button></div>
+  <div><h3>আপলোড করা ফাইল (${D.resources.length})</h3><div class="list">${D.resources.map(r=>`<div class="li"><div class="t"><a href="/uploads/${encodeURIComponent(r.file)}" target="_blank">${esc(r.title)}</a><small>${esc(r.name)}, ${sz(r.size)}, ${esc(r.date)}</small></div><button class="btn red sm" data-d="${r.id}">মুছুন</button></div>`).join('')||'<div class="li">কিছু নেই</div>'}</div></div></div>`;
+  $('#fup').onclick=async()=>{const f=$('#ff').files[0];if(!f)return flash('ফাইল বাছুন',false);if(f.size>15*1048576)return flash('ফাইল ১৫ MB-এর বেশি',false);
+    $('#fup').disabled=true;$('#fup').textContent='আপলোড হচ্ছে…';
+    try{const data=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=()=>rej(new Error('ফাইল পড়া যায়নি'));r.readAsDataURL(f);});
+      await api('POST','/api/upload',{title:$('#ft').value,c:$('#fc').value,name:f.name,data});await load();files();flash('আপলোড হয়েছে');}catch(er){flash(er.message,false);$('#fup').disabled=false;$('#fup').textContent='আপলোড';}};
+  $('#pane').onclick=async e=>{const b=e.target.closest('[data-d]');if(b&&tab==='files'&&confirm('ফাইলটি মুছবেন?')){await api('DELETE','/api/resources/'+b.dataset.d);await load();files();}};
+}
+
+/* ---------- বিষয় ও টপিক ---------- */
+function meta(){
+  $('#pane').innerHTML=`<div id="msg"></div><h3>বিষয় (Subjects)</h3><p class="hint">প্রশ্নব্যাংকের কোর্স-আইডি, সংক্ষিপ্ত নাম (n), পূর্ণ নাম (t) ও রঙ (c)। নতুন কোর্সের প্রশ্ন যোগ করতে আগে এখানে বিষয় যোগ করুন।</p><textarea id="sj" style="min-height:200px" spellcheck="false">${esc(JSON.stringify(D.subjects,null,2))}</textarea><button class="btn" id="sjs" style="margin-top:8px">বিষয় সেভ করুন</button>
+  <h3 style="margin-top:26px">হট টপিকের নিয়ম (Topics)</h3><p class="hint">প্রতিটি টপিকে <code>l</code> নাম, <code>c</code> কোর্স-আইডির তালিকা, <code>re</code> regex (ইংরেজি, case-insensitive)। প্রশ্নের লেখায় regex মিললে টপিকটি গোনা হয়।</p><textarea id="tp" style="min-height:320px" spellcheck="false">${esc(JSON.stringify(D.topics,null,1))}</textarea><button class="btn" id="tps" style="margin-top:8px">টপিক সেভ করুন</button>`;
+  $('#sjs').onclick=async()=>{try{await api('PUT','/api/subjects',{subjects:JSON.parse($('#sj').value)});await load();flash('বিষয় সেভ হয়েছে');}catch(er){flash(er.message,false);}};
+  $('#tps').onclick=async()=>{try{const r=await api('PUT','/api/topics',{topics:JSON.parse($('#tp').value)});await load();flash(r.n+'টি টপিক সেভ হয়েছে');}catch(er){flash(er.message,false);}};
+}
+function program(){
+  $('#pane').innerHTML=`<div id="msg"></div><h3>প্রোগ্রাম তথ্য (JSON)</h3><p class="hint">ভিশন, মিশন, ক্রেডিট বণ্টন, PEO/PO ইত্যাদি।</p><textarea id="pg" style="min-height:420px" spellcheck="false">${esc(JSON.stringify(D.program,null,2))}</textarea><button class="btn" id="pgs" style="margin-top:8px">সেভ করুন</button>`;
+  $('#pgs').onclick=async()=>{try{await api('PUT','/api/program',{program:JSON.parse($('#pg').value)});await load();flash('সেভ হয়েছে');}catch(er){flash(er.message,false);}};
+}
+/* ---------- লাইভ রুম ---------- */
+async function roomsTab(){
+  let R; try{R=await api('GET','/api/admin/c/rooms');}catch(er){$('#pane').innerHTML='<div class="msg err">'+esc(er.message)+'</div>';return;}
+  const c=R.cfg, mins=ms=>Math.max(1,Math.round(ms/60000))+' মিনিট';
+  const rows=R.rooms.map(r=>`<div class="li"><div class="t"><b>${esc(r.title)}</b> <span class="chip">${r.mode==='video'?'ভিডিও':'ভয়েস'}</span> <span class="chip">👥 ${r.count}/${r.max}</span>${r.locked?' <span class="chip">🔒 কোড</span>':''}${r.listed?'':' <span class="chip">অতালিকাভুক্ত</span>'}<br><small>হোস্ট: ${esc(r.host.name)} · চালু ${mins(r.age)} · ${r.participants.map(p=>esc(p.name)+(p.away?' (নেট নেই)':'')).join(', ')||'কেউ নেই'}</small></div><button class="btn ghost fit" data-rc="${r.id}">বন্ধ করুন</button></div>`).join('');
+  $('#pane').innerHTML=`<div id="msg"></div><p class="hint">সদস্যরা সাইটের ভেতরেই ছোট দলের ভয়েস/ভিডিও কল করতে পারেন। কল সরাসরি ব্রাউজার থেকে ব্রাউজারে যায় (সার্ভার শুধু সংযোগ জোড়ে, কিছু রেকর্ড বা সংরক্ষণ করে না), তাই সার্ভারের লোড খুব কম। রুম মেমরিতে থাকে, সার্ভার রিস্টার্টে মুছে যায়।</p>
+   <div class="cols"><div><label class="chk"><input type="checkbox" id="rcOpen" ${c.open?'checked':''}> লাইভ রুম চালু (বন্ধ করলে এখনকার সব রুম বন্ধ হয়)</label><label class="chk"><input type="checkbox" id="rcSt" ${c.studentsCanCreate?'checked':''}> শিক্ষার্থীরাও রুম খুলতে পারবে (বন্ধ থাকলে শুধু শিক্ষক, CR ও মডারেটর)</label></div>
+   <div><label for="rcV">ভিডিও রুমে সর্বোচ্চ জন (২–৮)</label><input id="rcV" type="number" min="2" max="8" value="${c.maxVideo}"><label for="rcA">ভয়েস রুমে সর্বোচ্চ জন (২–১৬)</label><input id="rcA" type="number" min="2" max="16" value="${c.maxVoice}"><label for="rcM">একসাথে সর্বোচ্চ রুম</label><input id="rcM" type="number" min="1" max="100" value="${c.maxRooms}"></div></div>
+   <div class="row"><button class="btn fit" id="rcSave">সেভ করুন</button></div>
+   <p class="hint" style="margin-top:14px"><b>সংযোগের অবস্থা:</b> ${R.turn?'✅ TURN সার্ভার দেওয়া আছে, মোবাইল ডেটা ও কড়া নেটওয়ার্কেও কল জোড়া লাগবে।':'⚠️ TURN সার্ভার নেই, শুধু STUN। কিছু নেটওয়ার্কে (বিশেষত মোবাইল ডেটা বা বিশ্ববিদ্যালয়ের ফায়ারওয়াল) কল জোড়া নাও লাগতে পারে। সমাধান: coturn চালিয়ে সার্ভারে <code>TURN_URLS</code> ও <code>TURN_SECRET</code> দিন (README দেখুন)।'} <br>ভয়েস/ভিডিওর জন্য সাইট অবশ্যই <b>https</b>-এ চালাতে হবে।</p>
+   <h4 style="margin:14px 0 6px">এখন চালু রুম (${R.rooms.length})</h4><div class="list">${rows||'<p class="hint">কোনো রুম চালু নেই।</p>'}</div>`;
+  $('#rcSave').onclick=async()=>{try{await api('PUT','/api/admin/c/rooms/config',{open:$('#rcOpen').checked,studentsCanCreate:$('#rcSt').checked,maxVideo:+$('#rcV').value,maxVoice:+$('#rcA').value,maxRooms:+$('#rcM').value});flash('সেভ হয়েছে');}catch(er){flash(er.message,false);}roomsTab();};
+  $$('[data-rc]').forEach(b=>b.onclick=async()=>{if(!confirm('রুমটি বন্ধ করবেন? ভেতরের সবাই বাইরে চলে যাবে।'))return;try{await api('POST','/api/admin/c/rooms/'+b.dataset.rc+'/close',{});}catch(er){flash(er.message,false);}roomsTab();});
+}
+/* ---------- জব সেক্টর ---------- */
+let jbView='pending', jbEdit=null;
+async function jobsTab(){
+  let R; try{R=await api('GET','/api/admin/c/jobs');}catch(er){$('#pane').innerHTML='<div class="msg err">'+esc(er.message)+'</div>';return;}
+  const by=st=>R.jobs.filter(j=>j.status===st), cur=jbEdit?R.jobs.find(j=>j.id===jbEdit):null, opt=(o,sel)=>Object.keys(o).map(k=>`<option value="${k}" ${k===sel?'selected':''}>${esc(o[k])}</option>`).join('');
+  const dt=ts=>ts?new Date(ts).toLocaleString('bn-BD',{dateStyle:'medium',timeStyle:'short'}):'—';
+  const row=j=>`<div class="li"><div class="t"><b>${esc(j.title)}</b> <span class="chip">${esc(R.types[j.type]||j.type)}</span> <span class="chip">${esc(R.cats[j.cat]||j.cat)}</span> <span class="chip">${esc(R.where[j.where]||'')}</span>${j.feed?' <span class="chip sig">ফিড</span>':''}${j.flagged?' <span class="chip sig">রিপোর্ট হয়েছে</span>':''}${j.expired?' <span class="chip">মেয়াদ শেষ</span>':''}<br><small>${esc(j.org||j.source||'—')}${j.loc?' · '+esc(j.loc):''} · শেষ তারিখ: ${esc(j.deadline||'নেই')}${j.by?' · জমা: '+esc(j.by):''}${j.reason?' · কারণ: '+esc(j.reason):''}<br><a href="${esc(j.link)}" target="_blank" rel="noopener noreferrer nofollow">${esc(j.host)} ↗</a></small></div>
+    ${j.status!=='approved'?`<button class="btn fit" data-jst="approved" data-j="${j.id}">অনুমোদন</button>`:''}${j.status==='pending'?`<button class="btn ghost fit" data-jst="rejected" data-j="${j.id}">বাতিল</button>`:''}${j.status==='approved'?`<button class="btn ghost fit" data-jst="pending" data-j="${j.id}">লুকান</button>`:''}<button class="btn ghost fit" data-jed="${j.id}">সম্পাদনা</button><button class="btn ghost fit" data-jdel="${j.id}">মুছুন</button></div>`;
+  const F=cur||{title:'',org:'',loc:'',where:'bd',type:'job',cat:'research',deadline:'',link:'',note:''};
+  const form=`<h4 style="margin:6px 0">${cur?'সার্কুলার সম্পাদনা':'নতুন সার্কুলার যোগ'}</h4><div class="cols"><div><label for="jT">শিরোনাম (পদের নাম)</label><input id="jT" value="${esc(F.title)}" maxlength="150"><label for="jO">সংস্থা / কোম্পানি</label><input id="jO" value="${esc(F.org)}" maxlength="100"><label for="jL">স্থান (যেমন ঢাকা, সিলেট)</label><input id="jL" value="${esc(F.loc)}" maxlength="80"><label for="jK">আবেদনের লিংক (Bdjobs বা মূল সাইটের পাতা)</label><input id="jK" value="${esc(F.link)}" placeholder="https://…"></div>
+   <div><label for="jTy">ধরন</label><select id="jTy">${opt(R.types,F.type)}</select><label for="jC">ক্যাটাগরি</label><select id="jC">${opt(R.cats,F.cat)}</select><label for="jW">কোথায়</label><select id="jW">${opt(R.where,F.where)}</select><label for="jD">আবেদনের শেষ তারিখ (না জানলে ফাঁকা)</label><input id="jD" type="date" value="${esc(F.deadline)}"><label for="jN">ছোট নোট (যোগ্যতা, কীভাবে আবেদন; ঐচ্ছিক)</label><textarea id="jN" style="min-height:70px" maxlength="400">${esc(F.note)}</textarea></div></div>
+   <div class="row"><button class="btn fit" id="jSave">${cur?'সেভ করুন':'যোগ করুন (সঙ্গে সঙ্গে প্রকাশ)'}</button>${cur?'<button class="btn ghost fit" id="jCancel">বাতিল</button>':''}</div>`;
+  const fr=R.feeds.map(f=>`<div class="li"><div class="t"><b>${esc(f.name)}</b> ${f.enabled?'':'<span class="chip">বন্ধ</span>'} <span class="chip">${f.auto==='approve'?'নিজে প্রকাশ':'অনুমোদন লাগবে'}</span><br><small><code>${esc(f.url)}</code><br>শেষবার: ${esc(dt(f.lastRun))} · ফিডে ${f.lastSeen}টি, নতুন ${f.lastNew}টি · মোট ${f.count}টি${f.keywords.length?' · কীওয়ার্ড: '+esc(f.keywords.join(', ')):''}${f.lastErr?`<br><span style="color:#b3261e">⚠️ ${esc(f.lastErr)}</span>`:''}</small></div>
+    <button class="btn fit" data-frun="${f.id}">এখনই আনুন</button><button class="btn ghost fit" data-ftg="${f.id}">${f.enabled?'বন্ধ করুন':'চালু করুন'}</button><button class="btn ghost fit" data-fdel="${f.id}">মুছুন</button></div>`).join('');
+  const feeds=`<h4 style="margin:18px 0 6px">অটো সার্কুলার (RSS/Atom ফিড)</h4><p class="hint">কোনো সাইটের RSS/Atom লিংক দিলে প্রতি ${R.everyHours} ঘণ্টায় সার্ভার নিজে নতুন সার্কুলার এনে তালিকায় রাখে। শুধু শিরোনাম, লিংক ও ছোট সারাংশ রাখা হয়; আবেদনের লিংক মূল সাইটেই যায়। <b>Bdjobs-এর কোনো পাবলিক RSS বা API নেই</b> এবং তাদের পাতা স্ক্র্যাপ করা তাদের শর্তবিরোধী, তাই ওটা এখানে নেই; Bdjobs-এর সার্কুলার লিংক ধরে ওপরের ফর্মে হাতে যোগ করুন (সদস্যরাও জমা দিতে পারে)। ফিডের উৎস: যে নিয়োগকর্তা, বিশ্ববিদ্যালয় বা জব সাইটের RSS আছে, অথবা Google Alerts (alerts.google.com-এ খোঁজার শব্দ যেমন <i>biotechnology job Bangladesh</i> দিয়ে "Deliver to" থেকে RSS বাছুন, সুবিধাটি পেলে)। কীওয়ার্ড দিলে শুধু মেলা সার্কুলার আসে।</p>
+   <div class="list">${fr||'<p class="hint">এখনো কোনো ফিড নেই।</p>'}</div>
+   <div class="cols"><div><label for="fN">ফিডের নাম</label><input id="fN" maxlength="60" placeholder="যেমন: Nature Careers"><label for="fU">RSS/Atom লিংক</label><input id="fU" placeholder="https://…"><label for="fK">কীওয়ার্ড (কমা দিয়ে; ফাঁকা = সব)</label><input id="fK" placeholder="biotech, genetic, microbiology, lab, research"></div>
+   <div><label for="fTy">ধরন</label><select id="fTy">${opt(R.types,'job')}</select><label for="fC">ক্যাটাগরি</label><select id="fC">${opt(R.cats,'research')}</select><label for="fW">কোথায়</label><select id="fW">${opt(R.where,'bd')}</select><label for="fA">নতুন সার্কুলার</label><select id="fA"><option value="pending">অনুমোদনের অপেক্ষায় রাখো (সুপারিশ)</option><option value="approve">সঙ্গে সঙ্গে প্রকাশ করো</option></select></div></div>
+   <div class="row"><button class="btn fit" id="fAdd">ফিড যোগ করুন</button><button class="btn ghost fit" id="fAll">সব ফিড এখনই চালান</button></div>`;
+  const tabs=[['pending','অপেক্ষমাণ ('+by('pending').length+')'],['approved','প্রকাশিত ('+by('approved').length+')'],['rejected','বাতিল ('+by('rejected').length+')']];
+  $('#pane').innerHTML=`<div id="msg"></div><p class="hint">সদস্যদের জমা দেওয়া ও ফিড থেকে আসা সার্কুলার এখানে অনুমোদন করুন। মডারেটর ভূমিকার সদস্যরাও সাইটের জব সেক্টর থেকেই অনুমোদন দিতে পারেন। মেয়াদ পেরোনো সার্কুলার সাইটে নিজে লুকিয়ে যায়, কিছুদিন পর মুছে যায়।</p>
+   <div class="subtabs">${tabs.map(t=>`<button data-jv="${t[0]}" class="${jbView===t[0]?'on':''}">${t[1]}</button>`).join('')}</div>
+   <div class="list">${by(jbView).map(row).join('')||'<p class="hint">কিছু নেই।</p>'}</div>${form}${feeds}`;
+  const act=async(fn,m)=>{try{await fn();if(m)flash(m);}catch(er){flash(er.message,false);}await jobsTab();};
+  $$('[data-jv]').forEach(b=>b.onclick=()=>{jbView=b.dataset.jv;jobsTab();});
+  $$('[data-jst]').forEach(b=>b.onclick=()=>act(()=>api('PUT','/api/admin/c/jobs/'+b.dataset.j,{status:b.dataset.jst}),'হয়েছে'));
+  $$('[data-jdel]').forEach(b=>b.onclick=()=>{if(confirm('এই সার্কুলার মুছবেন?'))act(()=>api('DELETE','/api/admin/c/jobs/'+b.dataset.jdel),'মোছা হয়েছে');});
+  $$('[data-jed]').forEach(b=>b.onclick=()=>{jbEdit=+b.dataset.jed;jobsTab().then(()=>$('#jT').scrollIntoView());});
+  const jbody=()=>({title:$('#jT').value,org:$('#jO').value,loc:$('#jL').value,link:$('#jK').value,type:$('#jTy').value,cat:$('#jC').value,where:$('#jW').value,deadline:$('#jD').value,note:$('#jN').value});
+  $('#jSave').onclick=()=>act(async()=>{if(cur){await api('PUT','/api/admin/c/jobs/'+cur.id,jbody());jbEdit=null;}else{await api('POST','/api/admin/c/jobs',jbody());jbView='approved';}},'সেভ হয়েছে');
+  if($('#jCancel'))$('#jCancel').onclick=()=>{jbEdit=null;jobsTab();};
+  $('#fAdd').onclick=()=>act(()=>api('POST','/api/admin/c/jobs/feeds',{name:$('#fN').value,url:$('#fU').value,keywords:$('#fK').value,type:$('#fTy').value,cat:$('#fC').value,where:$('#fW').value,auto:$('#fA').value}),'ফিড যোগ হয়েছে। "এখনই আনুন" দিয়ে পরীক্ষা করুন');
+  $('#fAll').onclick=e=>{e.target.disabled=true;e.target.textContent='আনা হচ্ছে…';act(()=>api('POST','/api/admin/c/jobs/feeds/run',{}),'শেষ');};
+  $$('[data-frun]').forEach(b=>b.onclick=()=>{b.disabled=true;b.textContent='আনা হচ্ছে…';act(()=>api('POST','/api/admin/c/jobs/feeds/'+b.dataset.frun+'/run',{}),'শেষ, নিচে ফলাফল দেখুন');});
+  $$('[data-ftg]').forEach(b=>b.onclick=()=>{const f=R.feeds.find(x=>x.id===+b.dataset.ftg);act(()=>api('PUT','/api/admin/c/jobs/feeds/'+f.id,{enabled:!f.enabled}));});
+  $$('[data-fdel]').forEach(b=>b.onclick=()=>{if(!confirm('ফিডটি মুছবেন?'))return;const del=confirm('এই ফিড থেকে আসা সব সার্কুলারও মুছবেন? (OK = মুছুন, Cancel = রেখে দিন)');act(()=>api('DELETE','/api/admin/c/jobs/feeds/'+b.dataset.fdel+(del?'?items=1':'')),'মোছা হয়েছে');});
+}
+function backup(){
+  $('#pane').innerHTML=`<div id="msg"></div><h3>অটো-ব্যাকআপ (পুরো সাইট)</h3><div id="abk"><p class="hint">লোড হচ্ছে…</p></div>
+  <h3 style="margin-top:26px">কনটেন্ট ব্যাকআপ (JSON)</h3><p class="hint">সব প্রশ্ন, মডেল উত্তর, MCQ, সিলেবাস, নোটিস, সেটিং ও ফাইলের তালিকা এক JSON ফাইলে। সদস্য, পোস্ট, নোট ফাইল ও সদস্যদের সিঙ্ক করা ডেটা এতে নেই, ওগুলো ওপরের অটো-ব্যাকআপে আছে।</p><p><a class="btn" style="text-decoration:none;display:inline-block" href="/api/export">JSON ব্যাকআপ ডাউনলোড</a></p><label for="imp">JSON ব্যাকআপ থেকে রিস্টোর (বর্তমান কনটেন্ট বদলে যাবে)</label><input type="file" id="imp" accept=".json,application/json"><button class="btn red" id="impb" style="margin-top:10px">রিস্টোর করুন</button>`;
+  $('#impb').onclick=async()=>{const f=$('#imp').files[0];if(!f)return flash('ফাইল বাছুন',false);if(!confirm('বর্তমান সব ডেটা বদলে যাবে। নিশ্চিত?'))return;try{await api('POST','/api/import',JSON.parse(await f.text()));await load();flash('রিস্টোর হয়েছে');}catch(er){flash(er.message,false);}};
+  const mb=n=>n>=1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB';
+  const when=t=>new Date(t).toLocaleString('bn-BD',{dateStyle:'medium',timeStyle:'short'});
+  async function drawAbk(){
+    let s;try{s=await api('GET','/api/admin/backups');}catch(er){$('#abk').innerHTML='<p class="hint">'+esc(er.message)+'</p>';return;}
+    const last=s.list[0], stale=s.everyHours&&(!last||Date.now()-last.at>s.everyHours*3600000*2.5);
+    $('#abk').innerHTML=`<p class="hint">পুরো <code>data/</code> ফোল্ডার (প্রশ্ন, সদস্য, পোস্ট, নোট ও ভাইভা ফাইল, ছবি, সদস্যদের সিঙ্ক ডেটা) একটি ZIP-এ।
+    ${s.everyHours?`নিজে থেকে প্রতি <b>${s.everyHours} ঘণ্টায়</b>`:'<b>অটো বন্ধ</b> (শুধু হাতে)'} নেওয়া হয়; রাখা হয় সর্বশেষ ${s.keepRecent}টি ও তার আগের ${s.keepWeeks} সপ্তাহের একটি করে।</p>
+    <p class="hint">ফোল্ডার: <code>${esc(s.dir)}</code>${s.dir.replace(/\\/g,'/').includes('/data/backups')?'<br>⚠️ এটি একই ডিস্কে। ডিস্ক নষ্ট হলে ব্যাকআপও যায়, তাই মাঝে মাঝে ডাউনলোড করে অন্য জায়গায় রাখুন (বা সার্ভারে <code>BACKUP_DIR</code> দিয়ে অন্য ডিস্ক দিন)।':''}</p>
+    ${s.lastError?`<p class="hint" style="color:#b3261e">সর্বশেষ ব্যর্থতা: ${esc(s.lastError)}</p>`:''}${stale?'<p class="hint" style="color:#b3261e">⚠️ অনেকদিন নতুন অটো-ব্যাকআপ হয়নি। সার্ভারের লগ দেখুন।</p>':''}
+    <p><button class="btn" id="bkNow" ${s.running?'disabled':''}>${s.running?'চলছে…':'এখনই ব্যাকআপ নিন'}</button></p>
+    ${s.list.length?`<table><thead><tr><th>সময়</th><th>আকার</th><th></th></tr></thead><tbody>${s.list.map(x=>`<tr><td>${esc(when(x.at))}<br><small>${esc(x.name)}</small></td><td>${mb(x.size)}</td><td><a class="btn" style="text-decoration:none;display:inline-block" href="/api/admin/backups/${encodeURIComponent(x.name)}">ডাউনলোড</a> <button class="btn red" data-bd="${esc(x.name)}">মুছুন</button></td></tr>`).join('')}</tbody></table>`:'<p class="hint">এখনো কোনো ব্যাকআপ নেই।</p>'}
+    <details style="margin-top:10px"><summary>ব্যাকআপ থেকে কীভাবে ফেরাবেন</summary><p class="hint">১) সার্ভার বন্ধ করুন। ২) প্রজেক্ট ফোল্ডারে: <code>node restore.js পথ/ব্যাকআপ.zip</code> (পূর্বরূপ দেখায়), তারপর শেষে <code>--yes</code> যোগ করে চালান। ফেরানোর আগে বর্তমান ডেটার একটি নিরাপত্তা-ব্যাকআপ (<code>geb-before-restore-…zip</code>) নিজেই নেওয়া হয়। ৩) সার্ভার চালু করুন। ব্যাকআপের পরে আসা ফাইল মুছতে <code>--clean</code> যোগ করুন।<br>ব্যাকআপে সদস্যদের পাসওয়ার্ডের হ্যাশ, ইমেইল, ফোন ও সিঙ্ক করা ব্যক্তিগত ডেটা থাকে। ফাইলটি নিরাপদ জায়গায় রাখুন, কাউকে দেবেন না।</p></details>`;
+    $('#bkNow').onclick=async e=>{e.target.disabled=true;e.target.textContent='চলছে…';try{const r=await api('POST','/api/admin/backups',{});flash('ব্যাকআপ হয়েছে ('+r.made.files+' ফাইল)');}catch(er){flash(er.message,false);}drawAbk();};
+    $('#abk').querySelectorAll('[data-bd]').forEach(b=>b.onclick=async()=>{if(!confirm('এই ব্যাকআপ মুছবেন?'))return;try{await api('DELETE','/api/admin/backups/'+encodeURIComponent(b.dataset.bd));}catch(er){flash(er.message,false);}drawAbk();});
+  }
+  drawAbk();
+}
+boot();
+</script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+/* GEB Hub: গেম জোনের স্টাইল (v3.4)। রঙ style.css-এর ভ্যারিয়েবল থেকে, তাই ডার্ক মোডেও মেলে। */
+#games .seg.tabs{margin-bottom:18px;max-width:100%;overflow-x:auto}
+.gm-body{display:grid;gap:16px}.gm-body>*{min-width:0}
+.gm-card,.gm-prof,.gm-vs{background:var(--card);border:1px solid var(--line);border-radius:var(--r-l);padding:18px 20px;box-shadow:var(--shadow)}
+.gm-card h3{margin:0 0 6px}.gm-h{margin:18px 0 8px}
+.gm-mut{color:var(--muted);font-size:14.5px;margin:6px 0}.gm-foot{color:var(--muted);font-size:14px;margin:18px 0 0}
+.gm-good{color:var(--accent-ink);font-weight:600;margin:8px 0}.gm-no{color:var(--signal);font-weight:600;margin:8px 0}
+.gm-lb{display:block;font-weight:600;margin:14px 0 6px}
+.gm-row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-top:12px}
+.gm-hd{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-bottom:8px}.gm-hd .btn{margin-left:auto}
+.gm-bar{height:8px;background:var(--line2);border-radius:99px;overflow:hidden;margin:6px 0}.gm-bar i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .3s}
+.gm-bar.tm i{background:var(--signal);transition:width .2s linear}
+.gm-award{margin:10px 0;display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+/* প্রোফাইল */
+.gm-prof{display:grid;grid-template-columns:auto 1fr;gap:10px 18px;align-items:center;background:linear-gradient(135deg,var(--gel2),var(--gel));color:#E7EFF4;border:0}
+.gm-lv{text-align:center;background:rgba(56,245,180,.12);border:2px solid var(--glow);border-radius:18px;padding:10px 18px}.gm-lv b{display:block;font:800 26px var(--f-head);color:var(--glow)}.gm-lv span{font-size:14px}
+.gm-prof .gm-bar{background:#243747}.gm-prof .gm-bar i{background:var(--glow)}.gm-prof small{color:#B7C7D3}
+.gm-stats{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14.5px}
+@media(max-width:560px){.gm-prof{grid-template-columns:1fr}}
+.gm-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.gm-tile{text-align:left;background:var(--card);border:1px solid var(--line);border-radius:var(--r-l);padding:16px;display:flex;flex-direction:column;gap:4px;box-shadow:var(--shadow);transition:transform .15s,border-color .15s}
+.gm-tile:hover{transform:translateY(-2px);border-color:var(--accent)}.gm-tile i{font-style:normal;font-size:28px}.gm-tile b{font-size:16.5px}.gm-tile span{color:var(--muted);font-size:14px}
+.gm-badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.gm-badge{background:var(--card2);border:1px dashed var(--line);border-radius:var(--r-m);padding:12px;display:flex;flex-direction:column;gap:3px;opacity:.78}
+.gm-badge.on{opacity:1;border:1px solid var(--accent);background:var(--accent-soft)}.gm-badge i{font-style:normal;font-size:26px}.gm-badge small{color:var(--muted);font-size:13px;line-height:1.35}.gm-badge em{font-style:normal;font-size:13px;color:var(--accent-ink);font-weight:600}
+/* MCQ ও অপশন */
+.gm-qt{font-size:18px;font-weight:600;margin:12px 0}
+.gm-opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}@media(max-width:640px){.gm-opts{grid-template-columns:1fr}}
+.gm-opt{display:flex;gap:10px;align-items:flex-start;text-align:left;border:1px solid var(--line);background:var(--card2);border-radius:var(--r-m);padding:10px 14px;line-height:1.4}
+.gm-opt b{min-width:22px;color:var(--accent-ink)}.gm-opt small{display:block;color:var(--muted)}.gm-opt:hover:not(:disabled){border-color:var(--accent)}
+.gm-opt.ok{background:var(--accent-soft);border-color:var(--accent)}.gm-opt.bad{background:var(--signal-soft);border-color:var(--signal)}.gm-opt:disabled{cursor:default}
+.gm-fb{margin-top:10px}
+.gm-lives{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.gm-life{border:1px solid var(--accent);background:transparent;color:var(--accent-ink);border-radius:99px;padding:5px 14px;font-weight:600}.gm-life:disabled{opacity:.35;text-decoration:line-through;cursor:default}
+.gm-poll{display:flex;gap:14px;align-items:flex-end;height:110px;margin:12px 0;padding:8px 12px;background:var(--card2);border-radius:var(--r-m)}.gm-poll>div{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;width:44px}.gm-poll i{display:block;width:100%;background:var(--accent);border-radius:6px 6px 0 0}.gm-poll b{font-size:12px}.gm-poll small{align-self:center;color:var(--muted);margin-left:auto;font-size:12px}
+.gm-friend{position:absolute;inset:0;background:var(--gel);color:#E7EFF4;border-radius:var(--r-l);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;z-index:2}.gm-friend span{font:800 44px var(--f-head);color:var(--glow)}
+#gmBody .gm-card{position:relative}
+.gm-lad summary{cursor:pointer;color:var(--accent-ink);font-weight:600;margin:6px 0}.gm-lad ol{list-style:none;margin:6px 0;padding:0;display:grid;gap:2px;max-height:240px;overflow:auto}
+.gm-lad li{display:flex;justify-content:space-between;padding:3px 10px;border-radius:8px;font-size:14px}.gm-lad li.cur{background:var(--glow);color:#06281F;font-weight:700}.gm-lad li.past{opacity:.45}.gm-lad li.cp{color:var(--signal);font-weight:700}.gm-lad li.cur.cp{color:#06281F}
+.gm-names{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-top:8px}.gm-names .fld{width:100%;min-width:0}
+/* জিন-ম্যাচ */
+.gm-mcols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:12px}.gm-mcol{display:grid;gap:8px;align-content:start}
+.gm-m{text-align:left;border:1px solid var(--line);background:var(--card);border-radius:var(--r-m);padding:10px 12px;line-height:1.35;font-size:15px}.gm-m.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft);background:var(--accent-soft)}
+.gm-m.ok{background:var(--accent-soft);border-color:var(--accent);opacity:.55}.gm-m.bad{background:var(--signal-soft);border-color:var(--signal);animation:gmshake .35s}
+@keyframes gmshake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.gm-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.gm-card-f{min-height:92px;border:1px solid var(--line);border-radius:var(--r-m);background:linear-gradient(135deg,var(--gel2),var(--gel));color:#E7EFF4;padding:8px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:13.5px;line-height:1.3}
+.gm-card-f .ft{display:none}.gm-card-f.up,.gm-card-f.ok{background:var(--card);color:var(--ink)}.gm-card-f.up .ft,.gm-card-f.ok .ft{display:block}.gm-card-f.up .bk,.gm-card-f.ok .bk{display:none}.gm-card-f.ok{border-color:var(--accent);background:var(--accent-soft)}
+.gm-card-f.d.up .ft,.gm-card-f.d.ok .ft{font-size:12.5px}
+.gm-learn{padding-left:18px;margin:6px 0}.gm-learn li{margin:3px 0}
+/* মিউটেশন */
+.gm-cases{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:14px}
+.gm-case{text-align:left;border:1px solid var(--line);background:var(--card2);border-radius:var(--r-m);padding:10px 12px;display:flex;flex-direction:column}.gm-case.on{border-color:var(--accent);background:var(--accent-soft)}.gm-case span,.gm-case em{font-size:13.5px;color:var(--muted);font-style:normal}
+.gm-steps{display:flex;flex-wrap:wrap;gap:6px;list-style:none;padding:0;margin:6px 0}.gm-steps li{padding:3px 12px;border-radius:99px;background:var(--line2);font-size:14px}.gm-steps li.cur{background:var(--ink);color:var(--paper)}.gm-steps li.ok{background:var(--accent-soft);color:var(--accent-ink)}.gm-steps li.no{background:var(--signal-soft);color:var(--signal)}
+.gm-seq{margin:10px 0;overflow-x:auto;padding-bottom:6px}.gm-seq-l{display:block;font-size:13.5px;color:var(--muted);margin-bottom:4px}
+.gm-cods{display:flex;gap:4px;width:max-content;max-width:none}
+.gm-cod{display:flex;flex-direction:column;align-items:center;font:600 14px ui-monospace,Menlo,Consolas,monospace;border:1px solid var(--line);background:var(--card2);border-radius:8px;padding:2px 7px 4px;min-width:46px}
+.gm-cod i{font:500 10.5px var(--f-body);font-style:normal;color:var(--muted)}.gm-cod em{font-style:normal;color:var(--accent-ink);font-size:13px}.gm-cod.diff{background:var(--signal-soft);border-color:var(--signal)}
+.gm-cods.click .gm-cod{cursor:pointer}.gm-cods.click .gm-cod:hover:not(:disabled){border-color:var(--accent)}.gm-cod.bad{background:var(--signal-soft);border-color:var(--signal)}
+.gm-aa{display:block;font:600 15px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.08em;word-break:break-all;margin:2px 0}.gm-aa .df{background:var(--signal-soft);color:var(--signal);border-radius:3px}
+.gm-ct{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;font:13px ui-monospace,Menlo,Consolas,monospace;margin-top:8px}.gm-ct p{margin:0 0 6px;display:grid}.gm-ct b{color:var(--accent-ink)}@media(max-width:560px){.gm-ct{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* ব্যাচ ওয়ার */
+.gm-vs-h{display:flex;gap:12px;align-items:center;justify-content:center}.gm-vs-h b{color:var(--signal)}
+.gm-vs-b{display:grid;grid-template-columns:1fr minmax(60px,.6fr) 1fr;gap:10px;align-items:center;margin:14px 0}@media(max-width:560px){.gm-vs-b{grid-template-columns:1fr 1fr}.gm-vs-mid{grid-column:1/-1;order:3}}
+.gm-side{text-align:center;padding:12px;border-radius:var(--r-m);border:2px solid var(--line);display:flex;flex-direction:column;gap:2px}.gm-side.a{border-color:var(--accent)}.gm-side.b{border-color:var(--signal)}.gm-side.win{box-shadow:0 0 0 3px var(--accent-soft)}
+.gm-side h4{margin:0;font:800 24px var(--f-head)}.gm-side b{font:800 30px var(--f-head)}.gm-side small{color:var(--muted)}
+.gm-meter{height:12px;background:var(--signal);border-radius:99px;overflow:hidden}.gm-meter i{display:block;height:100%;background:var(--accent)}
+.gm-days{display:flex;gap:8px;align-items:flex-end;height:110px;margin:14px 0 4px}.gm-days>div{flex:1;display:flex;align-items:flex-end;justify-content:center;gap:3px;height:100%;position:relative;padding-bottom:16px}.gm-days span{display:block;width:40%;min-height:2px;border-radius:4px 4px 0 0}.gm-days .a{background:var(--accent)}.gm-days .b{background:var(--signal)}.gm-days small{position:absolute;bottom:0;color:var(--muted);font-size:12px}
+.gm-me td{background:var(--accent-soft);font-weight:600}
+.chip.sig{background:var(--signal-soft);color:var(--signal)}
+@media (prefers-reduced-motion:reduce){.gm-m.bad{animation:none}.gm-tile,.gm-bar i{transition:none}}

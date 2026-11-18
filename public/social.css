@@ -1,0 +1,57 @@
+/* v3.7: নোট শেয়ারিং, পোল, ভাইভা প্র্যাকটিস, DNA কার্ড, জন্মদিন */
+.msg-warn{margin:10px 0;padding:10px 14px;border-radius:10px;background:var(--signal-soft);color:var(--ink);font-size:15px}
+.sx-pp{margin:8px 0}.sx-pp summary{cursor:pointer;font-weight:600;color:var(--accent-ink)}.sx-pp p{margin:6px 0}
+
+/* নোট */
+.sx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.sx-card{border:1px solid var(--line);background:var(--card);border-radius:var(--r-l,16px);padding:14px;display:flex;flex-direction:column;gap:8px}
+.sx-card.dim{opacity:.85;border-style:dashed}
+.sx-top{display:flex;gap:10px;align-items:flex-start}.sx-ic{font-size:30px;line-height:1}.sx-top .gx{flex:1;min-width:0}
+.sx-t{margin:0;font:700 17px var(--f-head);overflow-wrap:anywhere}.sx-d{margin:0;color:var(--muted);font-size:15px;overflow-wrap:anywhere}
+.sx-meta{display:flex;flex-wrap:wrap;gap:4px 12px;color:var(--muted);font-size:13.5px;align-items:center}.sx-meta .cav{vertical-align:middle}
+.sx-act{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:auto}
+.sx-vote{margin-left:auto;border:1px solid var(--line);border-radius:999px;padding:5px 12px;background:var(--card2);font-weight:600}
+.sx-vote.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink)}.sx-vote:disabled{opacity:.5;cursor:not-allowed}
+
+/* পোল */
+.sx-poll{margin-bottom:12px}.sx-rq{margin:10px 0}.sx-avg{margin:4px 0;color:var(--muted)}
+.sx-bar{display:grid;grid-template-columns:minmax(80px,1.1fr) 2fr auto;gap:8px;align-items:center;margin:5px 0;font-size:15px}
+.sx-bl{overflow-wrap:anywhere}.sx-bt{height:14px;border-radius:999px;background:var(--line2);overflow:hidden}.sx-bt i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .5s}
+.sx-bn{white-space:nowrap;font-weight:600}.sx-tx{margin:6px 0;padding-left:18px;max-height:220px;overflow:auto}
+.sx-fq{border:1px solid var(--line);border-radius:12px;margin:10px 0;padding:8px 12px}.sx-fq legend{font-weight:600;padding:0 6px}
+.chk.sm{display:flex;gap:8px;align-items:center;margin:4px 0}
+.sx-stars{display:flex;flex-direction:row-reverse;justify-content:flex-end;gap:2px}.sx-stars input{position:absolute;opacity:0}
+.sx-stars span{font-size:32px;color:var(--line);cursor:pointer;line-height:1}.sx-stars label:hover span,.sx-stars label:hover~label span,.sx-stars input:checked~span,.sx-stars label:has(input:checked)~label span{color:#FBBF24}
+.sx-stars input:checked+span{color:#FBBF24}.sx-stars input:focus-visible+span{outline:3px solid var(--signal);border-radius:6px}
+
+/* ভাইভা */
+.sx-run{border:2px solid var(--ink);border-radius:var(--r-l,16px);background:var(--card);padding:18px}
+.sx-rh{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.sx-pg{margin-left:auto;font-weight:700}
+.sx-dots{display:flex;gap:5px;margin:12px 0}.sx-dots i{flex:1;height:7px;border-radius:9px;background:var(--line2)}.sx-dots i.d{background:var(--accent-soft)}.sx-dots i.r{background:var(--accent)}.sx-dots i.c{background:var(--signal)}
+.sx-q{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;margin:10px 0}.sx-qn{font:700 clamp(20px,3.4vw,28px) var(--f-head);line-height:1.35;overflow-wrap:anywhere}
+.sx-clock{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;margin:12px 0}
+.sx-tm{font:800 34px var(--f-head);font-variant-numeric:tabular-nums}.sx-tm.low{color:var(--signal)}
+.sx-tb{height:10px;border-radius:9px;background:var(--line2);overflow:hidden}.sx-tb i{display:block;height:100%;background:var(--accent);transition:width .25s linear}
+.sx-ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.sx-ctl audio{max-width:100%}
+.sx-live{display:inline-flex;gap:8px;align-items:center;font-weight:700;color:var(--signal)}.sx-live i{width:12px;height:12px;border-radius:50%;background:var(--signal);animation:sxp 1s infinite}
+@keyframes sxp{50%{opacity:.25;transform:scale(.8)}}
+.sx-rev{border-top:1px solid var(--line2);padding:10px 0;display:grid;gap:6px}.sx-rev audio{width:100%;max-width:460px}
+.sx-sess{border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:10px 0;background:var(--card)}.sx-sess summary{cursor:pointer}
+.sx-score{background:var(--accent);color:#fff;font-weight:800}.sx-cm{background:var(--accent-soft);border-radius:10px;padding:8px 12px;margin:8px 0}.sx-sub{margin-bottom:12px}
+
+/* DNA কার্ড */
+.sx-dna{display:grid;grid-template-columns:minmax(260px,1fr) minmax(240px,420px);gap:22px;align-items:start}
+.sx-dna-pv canvas{width:100%;height:auto;border-radius:14px;border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.12);background:#07111C}
+.sx-dec{font:700 20px var(--f-head);margin:8px 0}.sx-dec.err{color:var(--signal);font-size:15px;font-weight:500}
+@media(max-width:760px){.sx-dna{grid-template-columns:1fr}.sx-dna-pv{order:-1}}
+
+/* জন্মদিন */
+.sx-bd{position:relative;overflow:hidden;border:2px solid var(--ink);border-radius:var(--r-l,16px);background:linear-gradient(120deg,var(--accent-soft),var(--card));padding:14px 16px;margin:14px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.sx-bd>.gx{flex:1}.sx-bdh{display:flex;flex-direction:column;gap:2px;font-size:17px;width:100%}.sx-bde{font-size:34px;line-height:1}
+.sx-bdl{display:flex;gap:12px;flex-wrap:wrap;width:100%}
+.sx-bc{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;min-width:min(100%,300px);position:relative;z-index:1}
+.sx-bc.me{border-color:var(--signal);box-shadow:0 0 0 2px var(--signal-soft)}.sx-bc .gx{flex:1;min-width:120px}
+.sx-bw{width:100%;border-top:1px dashed var(--line);padding-top:8px;max-height:220px;overflow:auto}.sx-bw p{margin:6px 0}
+.sx-cf{position:absolute;inset:0;pointer-events:none;overflow:hidden}.sx-cf i{position:absolute;top:-12px;width:8px;height:14px;border-radius:2px;opacity:.8;animation:sxf 4.5s linear infinite}
+@keyframes sxf{to{transform:translateY(190px) rotate(300deg);opacity:0}}
+@media(prefers-reduced-motion:reduce){.sx-cf{display:none}.sx-live i{animation:none}.sx-bt i,.sx-tb i{transition:none}}

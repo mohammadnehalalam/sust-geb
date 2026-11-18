@@ -1,0 +1,9 @@
+{
+  "name": "geb-hub",
+  "version": "3.21.0",
+  "description": "GEB, SUST স্টুডেন্ট হাব: ডায়নামিক ওয়েবসাইট (Node.js, কোনো বাইরের প্যাকেজ লাগে না)",
+  "main": "server.js",
+  "scripts": { "start": "node server.js", "test": "node sync-test.js && node jobs-test.js && node rooms-test.js && node voice-test.js && node lab-chat-test.js && node hospital-test.js", "restore": "node restore.js" },
+  "engines": { "node": ">=18" },
+  "license": "MIT"
+}
